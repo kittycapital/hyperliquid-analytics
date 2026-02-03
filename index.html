@@ -89,6 +89,8 @@
         .position-detail { display: flex; justify-content: space-between; }
         .position-detail-label { color: #71717a; }
         .position-detail-value { font-family: 'JetBrains Mono', monospace; color: #e4e4e7; }
+        .position-hint { font-size: 0.6rem; color: #22d3ee; text-align: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1a1a1a; opacity: 0.7; }
+        .position-card:hover .position-hint { opacity: 1; }
         
         .loading { text-align: center; padding: 50px; color: #71717a; }
         .loading-spinner { width: 36px; height: 36px; border: 3px solid #1a1a1a; border-top-color: #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 14px; }
@@ -322,6 +324,23 @@
         <!-- Whales -->
         <section id="whales" class="section">
             <div class="page-header"><h1>🐋 고래 추적기</h1><p>상위 트레이더 포지션 및 PnL 분석</p></div>
+            
+            <!-- Whale Tracker Guide -->
+            <div class="guide-section">
+                <div class="guide-header" onclick="toggleWhaleGuide()">
+                    <div class="guide-title">💡 고래 추적기 활용 가이드</div>
+                    <div class="guide-toggle"><span id="whale-guide-toggle-text">펼치기</span><svg id="whale-guide-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                </div>
+                <div class="guide-content" id="whale-guide-content">
+                    <div class="guide-grid">
+                        <div class="guide-card"><div class="guide-card-title">📊 포지션 집계 차트</div><div class="guide-card-content">상위 트레이더들의 포지션을 코인별로 집계합니다.<br><strong class="bullish">오른쪽(롱)</strong> vs <strong class="bearish">왼쪽(숏)</strong><br>고래들이 어떤 코인에 베팅하는지 파악하세요.</div></div>
+                        <div class="guide-card"><div class="guide-card-title">📈 PnL vs 포지션 사이즈</div><div class="guide-card-content"><strong>PnL 상위 200</strong>: 수익 기준 정렬<br>→ 실력 있는 트레이더 추적<br><strong>포지션 사이즈 기준</strong>: 규모 기준<br>→ 자금력 있는 트레이더 추적</div></div>
+                        <div class="guide-card"><div class="guide-card-title">🔍 트레이더 상세 보기</div><div class="guide-card-content">테이블에서 <strong>▼ 버튼</strong>을 클릭하면<br>해당 트레이더의 개별 포지션이 펼쳐집니다.<br>각 포지션의 코인, 방향, 진입가를 확인하세요.</div></div>
+                        <div class="guide-card"><div class="guide-card-title">📉 진입가 차트 보기</div><div class="guide-card-content">펼쳐진 <strong>포지션 카드를 클릭</strong>하면<br>가격 차트와 함께 <strong class="bearish">진입가 라인</strong>이 표시됩니다.<br>고래가 어디서 진입했는지 시각적으로 확인!</div></div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">📊 탑 트레이더 포지션 집계</h3>
@@ -411,6 +430,14 @@
             document.getElementById('funding-guide-content').classList.toggle('show', fundingGuideExpanded);
             document.getElementById('funding-guide-toggle-text').textContent = fundingGuideExpanded ? '접기' : '펼치기';
             document.getElementById('funding-guide-arrow').style.transform = fundingGuideExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        let whaleGuideExpanded = false;
+        function toggleWhaleGuide() {
+            whaleGuideExpanded = !whaleGuideExpanded;
+            document.getElementById('whale-guide-content').classList.toggle('show', whaleGuideExpanded);
+            document.getElementById('whale-guide-toggle-text').textContent = whaleGuideExpanded ? '접기' : '펼치기';
+            document.getElementById('whale-guide-arrow').style.transform = whaleGuideExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
         }
 
         function sortFunding(field) {
@@ -560,7 +587,7 @@
             if (!traders) return;
             document.getElementById('pnl-tbody').innerHTML = traders.map((t,i) => {
                 const name = t.displayName || fmt.addr(t.address), hasPos = t.positions?.length > 0;
-                return `<tr><td><span class="rank ${i<3?'top3':''}">#${i+1}</span></td><td class="address"><a href="https://app.hyperliquid.xyz/explorer/address/${t.address}" target="_blank">${name}</a></td><td>${fmt.usd(t.accountValue)}</td><td class="${t.pnl>=0?'positive':'negative'}">${fmt.usd(t.pnl)}</td><td class="${t.roi>=0?'positive':'negative'}">${fmt.pctDec(t.roi)}</td><td>${fmt.usd(t.volume)}</td><td>${hasPos?`<button class="expand-btn" onclick="togglePos(${i})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`:''}</td></tr>${hasPos?`<tr class="positions-row" id="pos-${i}"><td colspan="7"><div class="positions-content"><div class="positions-grid">${t.positions.map((p,pi) => `<div class="position-card" onclick="openPositionModal(${i}, ${pi})"><div class="position-header"><span class="position-coin">${p.coin}</span><span class="direction ${p.direction.toLowerCase()}">${p.direction==='Long'?'롱':'숏'}</span></div><div class="position-details"><div class="position-detail"><span class="position-detail-label">가치</span><span class="position-detail-value">${fmt.usd(p.positionValue)}</span></div><div class="position-detail"><span class="position-detail-label">레버리지</span><span class="position-detail-value">${p.leverage}x</span></div><div class="position-detail"><span class="position-detail-label">진입가</span><span class="position-detail-value">${fmt.px(p.entryPx, p.coin)}</span></div><div class="position-detail"><span class="position-detail-label">미실현</span><span class="position-detail-value ${p.unrealizedPnl>=0?'positive':'negative'}">${fmt.usd(p.unrealizedPnl)}</span></div></div></div>`).join('')}</div></div></td></tr>`:''}`;
+                return `<tr><td><span class="rank ${i<3?'top3':''}">#${i+1}</span></td><td class="address"><a href="https://app.hyperliquid.xyz/explorer/address/${t.address}" target="_blank">${name}</a></td><td>${fmt.usd(t.accountValue)}</td><td class="${t.pnl>=0?'positive':'negative'}">${fmt.usd(t.pnl)}</td><td class="${t.roi>=0?'positive':'negative'}">${fmt.pctDec(t.roi)}</td><td>${fmt.usd(t.volume)}</td><td>${hasPos?`<button class="expand-btn" onclick="togglePos(${i})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`:''}</td></tr>${hasPos?`<tr class="positions-row" id="pos-${i}"><td colspan="7"><div class="positions-content"><div class="positions-grid">${t.positions.map((p,pi) => `<div class="position-card" onclick="openPositionModal(${i}, ${pi})"><div class="position-header"><span class="position-coin">${p.coin}</span><span class="direction ${p.direction.toLowerCase()}">${p.direction==='Long'?'롱':'숏'}</span></div><div class="position-details"><div class="position-detail"><span class="position-detail-label">가치</span><span class="position-detail-value">${fmt.usd(p.positionValue)}</span></div><div class="position-detail"><span class="position-detail-label">레버리지</span><span class="position-detail-value">${p.leverage}x</span></div><div class="position-detail"><span class="position-detail-label">진입가</span><span class="position-detail-value">${fmt.px(p.entryPx, p.coin)}</span></div><div class="position-detail"><span class="position-detail-label">미실현</span><span class="position-detail-value ${p.unrealizedPnl>=0?'positive':'negative'}">${fmt.usd(p.unrealizedPnl)}</span></div></div><div class="position-hint">📈 클릭하여 차트 보기</div></div>`).join('')}</div></div></td></tr>`:''}`;
             }).join('');
         }
 
