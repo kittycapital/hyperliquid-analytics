@@ -489,12 +489,22 @@
             if (!live) return;
             let fund = Object.values(live).slice(0,50);
             if (fundingSortField === 'funding') {
-                fund.sort((a,b) => fundingSortDir === 'desc' ? Math.abs(b.funding)-Math.abs(a.funding) : Math.abs(a.funding)-Math.abs(b.funding));
+                fund.sort((a,b) => fundingSortDir === 'desc' ? b.funding - a.funding : a.funding - b.funding);
             } else {
-                fund.sort((a,b) => { const apyA = Math.abs(a.funding)*3*365, apyB = Math.abs(b.funding)*3*365; return fundingSortDir === 'desc' ? apyB-apyA : apyA-apyB; });
+                fund.sort((a,b) => { 
+                    const apyA = a.funding * 3 * 365;
+                    const apyB = b.funding * 3 * 365;
+                    return fundingSortDir === 'desc' ? apyB - apyA : apyA - apyB; 
+                });
             }
             const maxF = Math.max(...fund.map(f => Math.abs(f.funding)))||0.01;
-            document.getElementById('funding-tbody').innerHTML = fund.map((f,i) => { const w = Math.min((Math.abs(f.funding)/maxF)*50,50); return `<tr><td><span class="rank ${i<3?'top3':''}">${i+1}</span></td><td class="coin-name">${f.name}</td><td class="${f.funding>=0?'positive':'negative'}">${fmt.fund(f.funding)}</td><td><div class="funding-bar"><div class="funding-fill ${f.funding>=0?'funding-positive':'funding-negative'}" style="${f.funding>=0?'left:50%;':'right:50%;'}width:${w}%"></div></div></td><td class="${f.funding>=0?'positive':'negative'}">${fmt.pct(f.funding*3*365)}</td><td>${fmt.px(f.markPx, f.name)}</td><td>${fmt.usd(f.openInterest)}</td></tr>`; }).join('');
+            document.getElementById('funding-tbody').innerHTML = fund.map((f,i) => { 
+                const w = Math.min((Math.abs(f.funding)/maxF)*50,50);
+                const apy = f.funding * 3 * 365;
+                const fundClass = f.funding >= 0 ? 'positive' : 'negative';
+                const apyClass = apy >= 0 ? 'positive' : 'negative';
+                return `<tr><td><span class="rank ${i<3?'top3':''}">${i+1}</span></td><td class="coin-name">${f.name}</td><td class="${fundClass}">${fmt.fund(f.funding)}</td><td><div class="funding-bar"><div class="funding-fill ${f.funding>=0?'funding-positive':'funding-negative'}" style="${f.funding>=0?'left:50%;':'right:50%;'}width:${w}%"></div></div></td><td class="${apyClass}">${fmt.pct(apy)}</td><td>${fmt.px(f.markPx, f.name)}</td><td>${fmt.usd(f.openInterest)}</td></tr>`; 
+            }).join('');
         }
 
         function updateLiqChart() {
