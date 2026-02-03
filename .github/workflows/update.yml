@@ -14,11 +14,14 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install requests
-      - run: python fetch_data.py
+      - name: Fetch liquidation data
+        run: python fetch_liquidations.py
+      - name: Fetch whale data
+        run: python fetch_whales.py
       - name: Commit
         run: |
           git config user.email "actions@github.com"
           git config user.name "github-actions"
-          git add data.json
+          git add data.json whale_data.json
           git diff --staged --quiet || git commit -m "📊 Update $(date -u +'%Y-%m-%d %H:%M') UTC"
           git push
