@@ -1,6 +1,9 @@
 """
-Hyperliquid Analytics Dashboard - Complete Data Fetcher
-Sections: Dashboard, Markets & OI, Funding Rates, Liquidation Risk, Whale Tracker
+Hyperliquid Analytics Dashboard - Data Fetcher
+- Dashboard stats, Markets, Funding rates
+- Whale tracker (PnL top 200, Biggest positions)
+- Position aggregation by coin (for chart)
+- Liquidation map by price buckets (for chart)
 """
 
 import json
@@ -8,383 +11,314 @@ import requests
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from collections import defaultdict
+import math
 
 INFO_URL = "https://api.hyperliquid.xyz/info"
 LEADERBOARD_URL = "https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
-DATA_FILE = "data.json"
-
-TOP_N_TRADERS = 200
+TOP_N = 200
 MAX_WORKERS = 10
-REQUEST_DELAY = 0.1
-
 
 def api_request(payload):
-    """Make API request to Hyperliquid"""
     try:
-        response = requests.post(
-            INFO_URL,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=30
-        )
-        response.raise_for_status()
-        return response.json()
+        r = requests.post(INFO_URL, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+        r.raise_for_status()
+        return r.json()
     except Exception as e:
         print(f"API Error: {e}")
         return None
 
-
-def fetch_meta_and_contexts():
-    """Fetch market metadata and asset contexts"""
-    print("Fetching market metadata...")
+def fetch_meta():
+    print("📊 Fetching markets...")
     return api_request({"type": "metaAndAssetCtxs"})
 
-
 def fetch_leaderboard():
-    """Fetch leaderboard data"""
-    print("Fetching leaderboard...")
+    print("🏆 Fetching leaderboard...")
     try:
-        response = requests.get(LEADERBOARD_URL, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-        traders = data.get('leaderboardRows', [])
-        print(f"  Received {len(traders)} traders")
-        return traders
+        r = requests.get(LEADERBOARD_URL, timeout=30)
+        r.raise_for_status()
+        return r.json().get('leaderboardRows', [])
     except Exception as e:
         print(f"Leaderboard error: {e}")
         return []
 
-
-def fetch_positions(address):
-    """Fetch positions for a wallet"""
+def fetch_positions(addr):
     try:
-        data = api_request({
-            "type": "clearinghouseState",
-            "user": address
-        })
-        
-        if not data:
-            return []
-        
+        data = api_request({"type": "clearinghouseState", "user": addr})
+        if not data: return []
         positions = []
-        for asset_pos in data.get('assetPositions', []):
-            pos = asset_pos.get('position', {})
-            if pos:
-                szi = float(pos.get('szi', 0))
-                if szi != 0:
-                    leverage_data = pos.get('leverage', {})
-                    positions.append({
-                        'coin': pos.get('coin', ''),
-                        'direction': 'Long' if szi > 0 else 'Short',
-                        'size': abs(szi),
-                        'entryPx': pos.get('entryPx', '0'),
-                        'leverage': leverage_data.get('value', 0),
-                        'leverageType': leverage_data.get('type', 'cross'),
-                        'positionValue': float(pos.get('positionValue', 0)),
-                        'unrealizedPnl': pos.get('unrealizedPnl', '0'),
-                        'returnOnEquity': pos.get('returnOnEquity', '0'),
-                        'liquidationPx': pos.get('liquidationPx', ''),
-                        'marginUsed': pos.get('marginUsed', '0'),
-                        'traderAddress': address
-                    })
+        for ap in data.get('assetPositions', []):
+            p = ap.get('position', {})
+            szi = float(p.get('szi', 0))
+            if szi != 0:
+                lev = p.get('leverage', {})
+                lev_val = float(lev.get('value', 0)) if lev.get('value') else 0
+                positions.append({
+                    'coin': p.get('coin', ''),
+                    'direction': 'Long' if szi > 0 else 'Short',
+                    'size': abs(szi),
+                    'entryPx': p.get('entryPx', '0'),
+                    'leverage': lev_val,
+                    'positionValue': float(p.get('positionValue', 0)),
+                    'unrealizedPnl': float(p.get('unrealizedPnl', 0)),
+                    'liquidationPx': p.get('liquidationPx', ''),
+                })
         return positions
-    except Exception as e:
+    except:
         return []
 
-
-def process_markets_data(meta_data):
-    """Process market data for Markets & OI section"""
-    print("Processing market data...")
-    
-    if not meta_data or len(meta_data) < 2:
-        return [], {}
-    
-    universe = meta_data[0].get('universe', [])
-    asset_ctxs = meta_data[1]
-    
-    markets = []
-    total_oi = 0
-    total_volume_24h = 0
+def process_markets(meta):
+    if not meta or len(meta) < 2: return [], {}
+    universe, ctxs = meta[0].get('universe', []), meta[1]
+    markets, total_oi, total_vol = [], 0, 0
     
     for i, asset in enumerate(universe):
-        if i >= len(asset_ctxs):
-            break
-            
-        ctx = asset_ctxs[i]
-        name = asset.get('name', '')
-        
-        mark_px = float(ctx.get('markPx', 0))
-        open_interest = float(ctx.get('openInterest', 0))
-        funding = float(ctx.get('funding', 0))
-        prev_day_px = float(ctx.get('prevDayPx', 0))
-        volume_24h = float(ctx.get('dayNtlVlm', 0))
-        
-        change_24h = 0
-        if prev_day_px > 0:
-            change_24h = ((mark_px - prev_day_px) / prev_day_px) * 100
-        
-        oi_value = open_interest * mark_px
-        total_oi += oi_value
-        total_volume_24h += volume_24h
-        
+        if i >= len(ctxs): break
+        ctx = ctxs[i]
+        mark = float(ctx.get('markPx', 0))
+        oi = float(ctx.get('openInterest', 0))
+        vol = float(ctx.get('dayNtlVlm', 0))
+        prev = float(ctx.get('prevDayPx', 0))
+        chg = ((mark - prev) / prev * 100) if prev > 0 else 0
+        oi_val = oi * mark
+        total_oi += oi_val
+        total_vol += vol
         markets.append({
-            'name': name,
-            'markPx': mark_px,
-            'indexPx': float(ctx.get('oraclePx', mark_px)),
-            'change24h': change_24h,
-            'volume24h': volume_24h,
-            'openInterest': oi_value,
-            'openInterestCoins': open_interest,
-            'funding': funding * 100,
+            'name': asset.get('name', ''),
+            'markPx': mark,
+            'indexPx': float(ctx.get('oraclePx', mark)),
+            'change24h': chg,
+            'volume24h': vol,
+            'openInterest': oi_val,
+            'openInterestCoins': oi,
+            'funding': float(ctx.get('funding', 0)) * 100,
             'maxLeverage': asset.get('maxLeverage', 0)
         })
     
     markets.sort(key=lambda x: x['openInterest'], reverse=True)
-    
-    stats = {
-        'totalOI': total_oi,
-        'volume24h': total_volume_24h,
-        'activeMarkets': len(markets)
-    }
-    
-    return markets, stats
+    return markets, {'totalOI': total_oi, 'volume24h': total_vol, 'activeMarkets': len(markets)}
 
-
-def process_funding_rates(markets):
-    """Get current funding rates for all markets"""
-    print("Processing funding rates...")
-    
-    funding_data = []
-    for market in markets[:50]:
-        funding_data.append({
-            'coin': market['name'],
-            'rate': market['funding'],
-            'annualized': market['funding'] * 3 * 365,
-            'markPx': market['markPx'],
-            'openInterest': market['openInterest']
-        })
-    
-    funding_data.sort(key=lambda x: abs(x['rate']), reverse=True)
-    return funding_data
-
-
-def analyze_liquidation_risk(positions_map, markets_dict):
-    """Analyze liquidation risk from whale positions"""
-    print("Analyzing liquidation risk...")
-    
-    liquidation_risks = []
-    
-    for address, positions in positions_map.items():
-        for pos in positions:
-            liq_px = pos.get('liquidationPx')
-            if not liq_px or liq_px == '':
-                continue
-                
-            try:
-                liq_px = float(liq_px)
-                if liq_px <= 0 or liq_px > 1e10:
-                    continue
-                    
-                coin = pos['coin']
-                market = markets_dict.get(coin, {})
-                current_px = market.get('markPx', 0)
-                
-                if current_px <= 0:
-                    continue
-                
-                if pos['direction'] == 'Long':
-                    distance_pct = ((current_px - liq_px) / current_px) * 100
-                else:
-                    distance_pct = ((liq_px - current_px) / current_px) * 100
-                
-                if 0 < distance_pct < 50:
-                    liquidation_risks.append({
-                        'coin': coin,
-                        'direction': pos['direction'],
-                        'positionValue': pos['positionValue'],
-                        'size': pos['size'],
-                        'entryPx': pos['entryPx'],
-                        'currentPx': current_px,
-                        'liquidationPx': liq_px,
-                        'distancePct': distance_pct,
-                        'leverage': pos['leverage'],
-                        'traderAddress': pos['traderAddress'],
-                        'unrealizedPnl': pos['unrealizedPnl']
-                    })
-            except (ValueError, TypeError):
-                continue
-    
-    liquidation_risks.sort(key=lambda x: x['distancePct'])
-    return liquidation_risks[:200]
-
-
-def get_pnl_data(trader, period):
-    """Extract PnL data for a period"""
+def get_pnl(trader, period):
     for perf in trader.get('windowPerformances', []):
         if perf[0] == period:
-            return {
-                'pnl': float(perf[1].get('pnl', 0)),
-                'roi': float(perf[1].get('roi', 0)),
-                'volume': float(perf[1].get('vlm', 0))
-            }
+            return {'pnl': float(perf[1].get('pnl', 0)), 'roi': float(perf[1].get('roi', 0)), 'volume': float(perf[1].get('vlm', 0))}
     return {'pnl': 0, 'roi': 0, 'volume': 0}
 
+def process_traders_pnl(traders, period, n=TOP_N):
+    result = []
+    for t in traders:
+        pnl = get_pnl(t, period)
+        result.append({'address': t.get('ethAddress', ''), 'displayName': t.get('displayName'), 'accountValue': float(t.get('accountValue', 0)), **pnl})
+    result.sort(key=lambda x: x['pnl'], reverse=True)
+    return result[:n]
 
-def process_traders(traders, period, top_n=TOP_N_TRADERS):
-    """Process traders by PnL"""
-    processed = []
-    for trader in traders:
-        pnl_data = get_pnl_data(trader, period)
-        if pnl_data['pnl'] == 0:
-            continue
-        processed.append({
-            'address': trader.get('ethAddress', ''),
-            'displayName': trader.get('displayName'),
-            'accountValue': float(trader.get('accountValue', 0)),
-            'pnl': pnl_data['pnl'],
-            'roi': pnl_data['roi'],
-            'volume': pnl_data['volume']
-        })
-    processed.sort(key=lambda x: x['pnl'], reverse=True)
-    return processed[:top_n]
+def process_traders_value(traders, n=TOP_N):
+    result = [{'address': t.get('ethAddress', ''), 'displayName': t.get('displayName'), 'accountValue': float(t.get('accountValue', 0))} for t in traders]
+    result.sort(key=lambda x: x['accountValue'], reverse=True)
+    return result[:n]
 
-
-def fetch_positions_batch(addresses):
-    """Fetch positions for multiple addresses"""
-    positions_map = {}
+def fetch_all_positions(addresses):
+    pos_map = {}
     total = len(addresses)
-    print(f"\nFetching positions for {total} addresses...")
+    print(f"\n🐋 Fetching positions for {total} addresses...")
     
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_addr = {executor.submit(fetch_positions, addr): addr for addr in addresses}
-        completed = 0
-        for future in as_completed(future_to_addr):
-            addr = future_to_addr[future]
-            completed += 1
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
+        futures = {ex.submit(fetch_positions, a): a for a in addresses}
+        done = 0
+        for f in as_completed(futures):
+            addr = futures[f]
+            done += 1
             try:
-                positions_map[addr] = future.result()
-                if completed % 50 == 0:
-                    print(f"  Progress: {completed}/{total}")
-            except Exception as e:
-                positions_map[addr] = []
-            time.sleep(REQUEST_DELAY)
+                pos_map[addr] = f.result()
+            except:
+                pos_map[addr] = []
+            if done % 50 == 0:
+                print(f"   └─ {done}/{total}")
+            time.sleep(0.1)
     
-    return positions_map
+    print(f"   └─ Done: {done}/{total}")
+    return pos_map
 
-
-def extract_biggest_positions(positions_map, traders_info, top_n=TOP_N_TRADERS):
-    """Extract biggest positions by value"""
-    all_positions = []
-    trader_lookup = {t['address']: t for t in traders_info}
+def aggregate_positions(traders):
+    agg = defaultdict(lambda: {'long': 0, 'short': 0, 'longSize': 0, 'shortSize': 0})
+    for t in traders:
+        for p in t.get('positions', []):
+            c = p['coin']
+            if p['direction'] == 'Long':
+                agg[c]['long'] += p['positionValue']
+                agg[c]['longSize'] += p['size']
+            else:
+                agg[c]['short'] += p['positionValue']
+                agg[c]['shortSize'] += p['size']
     
-    for address, positions in positions_map.items():
-        trader_info = trader_lookup.get(address, {})
-        for pos in positions:
-            pos_copy = pos.copy()
-            pos_copy['traderName'] = trader_info.get('displayName')
-            pos_copy['traderAccountValue'] = trader_info.get('accountValue', 0)
-            all_positions.append(pos_copy)
-    
-    all_positions.sort(key=lambda x: float(x.get('positionValue', 0)), reverse=True)
-    return all_positions[:top_n]
+    result = [{'coin': c, **d, 'total': d['long'] + d['short']} for c, d in agg.items()]
+    result.sort(key=lambda x: x['total'], reverse=True)
+    return result[:25]
 
+def get_bucket_size(coin, price):
+    buckets = {'BTC': 1000, 'ETH': 50, 'SOL': 5, 'BNB': 10}
+    if coin in buckets: return buckets[coin]
+    if price >= 10000: return 500
+    if price >= 1000: return 100
+    if price >= 100: return 10
+    if price >= 10: return 1
+    if price >= 1: return 0.1
+    return 0.01
+
+def get_lev_cat(lev):
+    if lev >= 100: return '100x'
+    if lev >= 50: return '50x'
+    if lev >= 25: return '25x'
+    return '10x'
+
+def build_liq_map(traders, markets_dict):
+    print("🗺️  Building liquidation map...")
+    liq_by_coin = defaultdict(list)
+    
+    for t in traders:
+        for p in t.get('positions', []):
+            liq = p.get('liquidationPx')
+            if not liq: continue
+            try:
+                liq = float(liq)
+                if liq <= 0 or liq > 1e12: continue
+                liq_by_coin[p['coin']].append({**p, 'liquidationPx': liq, 'traderAddress': t.get('address', '')})
+            except:
+                continue
+    
+    result = {}
+    for coin, positions in liq_by_coin.items():
+        if len(positions) < 2: continue
+        market = markets_dict.get(coin, {})
+        curr = market.get('markPx', 0)
+        if curr <= 0: continue
+        
+        bucket_size = get_bucket_size(coin, curr)
+        min_p, max_p = curr * 0.7, curr * 1.3
+        buckets = defaultdict(lambda: {'long': {'10x': 0, '25x': 0, '50x': 0, '100x': 0, 'total': 0}, 'short': {'10x': 0, '25x': 0, '50x': 0, '100x': 0, 'total': 0}})
+        total_long, total_short = 0, 0
+        
+        for p in positions:
+            liq = p['liquidationPx']
+            if liq < min_p or liq > max_p: continue
+            key = math.floor(liq / bucket_size) * bucket_size
+            cat = get_lev_cat(p['leverage'])
+            d = p['direction'].lower()
+            buckets[key][d][cat] += p['positionValue']
+            buckets[key][d]['total'] += p['positionValue']
+            if d == 'long': total_long += p['positionValue']
+            else: total_short += p['positionValue']
+        
+        bucket_list = [{'price': k, 'priceEnd': k + bucket_size, 'long': v['long'], 'short': v['short']} for k, v in sorted(buckets.items()) if v['long']['total'] > 0 or v['short']['total'] > 0]
+        
+        if bucket_list:
+            result[coin] = {'buckets': bucket_list, 'currentPrice': curr, 'bucketSize': bucket_size, 'totalLongLiq': total_long, 'totalShortLiq': total_short}
+    
+    print(f"   └─ {len(result)} coins mapped")
+    return result
+
+def get_biggest_positions(pos_map, trader_info, n=TOP_N):
+    lookup = {t['address']: t for t in trader_info}
+    all_pos = []
+    for addr, positions in pos_map.items():
+        info = lookup.get(addr, {})
+        for p in positions:
+            all_pos.append({**p, 'traderAddress': addr, 'traderName': info.get('displayName'), 'traderAccountValue': info.get('accountValue', 0)})
+    all_pos.sort(key=lambda x: x.get('positionValue', 0), reverse=True)
+    return all_pos[:n]
+
+def get_liq_risks(pos_map, markets_dict):
+    risks = []
+    for addr, positions in pos_map.items():
+        for p in positions:
+            liq = p.get('liquidationPx')
+            if not liq: continue
+            try:
+                liq = float(liq)
+                if liq <= 0: continue
+                curr = markets_dict.get(p['coin'], {}).get('markPx', 0)
+                if curr <= 0: continue
+                dist = ((curr - liq) / curr * 100) if p['direction'] == 'Long' else ((liq - curr) / curr * 100)
+                if 0 < dist < 50:
+                    risks.append({**p, 'currentPx': curr, 'liquidationPx': liq, 'distancePct': dist, 'traderAddress': addr})
+            except:
+                continue
+    risks.sort(key=lambda x: x['distancePct'])
+    return risks[:200]
 
 def main():
     print("=" * 60)
-    print("Hyperliquid Analytics Dashboard - Data Fetcher")
+    print("🚀 Hyperliquid Analytics - Data Fetcher")
     print("=" * 60)
     
-    # 1. Fetch market data
-    meta_data = fetch_meta_and_contexts()
-    markets, dashboard_stats = process_markets_data(meta_data)
-    
+    meta = fetch_meta()
+    markets, stats = process_markets(meta)
     if not markets:
-        print("Failed to fetch market data")
+        print("❌ Failed to fetch markets")
         return
     
     markets_dict = {m['name']: m for m in markets}
-    print(f"  Processed {len(markets)} markets")
+    funding = sorted(markets[:50], key=lambda x: abs(x['funding']), reverse=True)
     
-    # 2. Process funding rates
-    funding_rates = process_funding_rates(markets)
-    print(f"  Processed {len(funding_rates)} funding rates")
-    
-    # 3. Fetch leaderboard for whale tracker
     traders = fetch_leaderboard()
+    if not traders:
+        print("❌ Failed to fetch leaderboard")
+        return
     
-    daily_top = process_traders(traders, 'day', TOP_N_TRADERS) if traders else []
-    weekly_top = process_traders(traders, 'week', TOP_N_TRADERS) if traders else []
+    print("\n📋 Processing traders...")
+    daily = process_traders_pnl(traders, 'day')
+    weekly = process_traders_pnl(traders, 'week')
+    by_value = process_traders_value(traders)
     
-    # Collect addresses
-    all_addresses = set()
-    all_traders_info = []
+    # Collect unique addresses
+    all_addr = set()
+    addr_info = {}
+    for t in daily + weekly + by_value:
+        all_addr.add(t['address'])
+        addr_info[t['address']] = t
     
-    for t in daily_top + weekly_top:
-        if t['address'] not in [ti['address'] for ti in all_traders_info]:
-            all_traders_info.append(t)
-        all_addresses.add(t['address'])
+    pos_map = fetch_all_positions(list(all_addr))
     
-    # Add top traders by account value
-    if traders:
-        traders_by_value = sorted(traders, key=lambda x: float(x.get('accountValue', 0)), reverse=True)
-        for t in traders_by_value[:TOP_N_TRADERS]:
-            addr = t.get('ethAddress', '')
-            if addr and addr not in all_addresses:
-                all_addresses.add(addr)
-                all_traders_info.append({
-                    'address': addr,
-                    'displayName': t.get('displayName'),
-                    'accountValue': float(t.get('accountValue', 0)),
-                    'pnl': 0, 'roi': 0, 'volume': 0
-                })
+    # Attach positions
+    for t in daily: t['positions'] = pos_map.get(t['address'], [])
+    for t in weekly: t['positions'] = pos_map.get(t['address'], [])
+    for t in by_value: t['positions'] = pos_map.get(t['address'], [])
     
-    # 4. Fetch all positions
-    positions_map = fetch_positions_batch(list(all_addresses)) if all_addresses else {}
+    print("\n📊 Aggregating positions...")
+    agg_daily = aggregate_positions(daily)
+    agg_weekly = aggregate_positions(weekly)
+    agg_size = aggregate_positions(by_value)
     
-    # Attach positions to traders
-    for trader in daily_top:
-        trader['positions'] = positions_map.get(trader['address'], [])
-    for trader in weekly_top:
-        trader['positions'] = positions_map.get(trader['address'], [])
+    liq_daily = build_liq_map(daily, markets_dict)
+    liq_weekly = build_liq_map(weekly, markets_dict)
+    liq_size = build_liq_map(by_value, markets_dict)
     
-    # 5. Extract biggest positions
-    biggest_positions = extract_biggest_positions(positions_map, all_traders_info, TOP_N_TRADERS)
+    biggest = get_biggest_positions(pos_map, list(addr_info.values()))
+    liq_risks = get_liq_risks(pos_map, markets_dict)
     
-    # 6. Analyze liquidation risk
-    liquidation_risks = analyze_liquidation_risk(positions_map, markets_dict)
-    print(f"  Analyzed {len(liquidation_risks)} liquidation risk positions")
-    
-    # Summary
-    print("\n" + "=" * 60)
-    print(f"Total OI: ${dashboard_stats['totalOI']:,.0f}")
-    print(f"24h Volume: ${dashboard_stats['volume24h']:,.0f}")
-    print(f"Active Markets: {dashboard_stats['activeMarkets']}")
+    print(f"\n{'='*60}")
+    print(f"📊 Total OI: ${stats['totalOI']:,.0f}")
+    print(f"📈 24h Volume: ${stats['volume24h']:,.0f}")
+    print(f"🏪 Markets: {stats['activeMarkets']}")
+    print(f"👥 Traders: {len(traders)}")
     print("=" * 60)
     
-    # Build output
     output = {
-        'dashboard': {
-            'totalOI': dashboard_stats['totalOI'],
-            'volume24h': dashboard_stats['volume24h'],
-            'activeMarkets': dashboard_stats['activeMarkets'],
-            'totalTraders': len(traders) if traders else 0
-        },
+        'dashboard': {**stats, 'totalTraders': len(traders)},
         'markets': markets,
-        'fundingRates': funding_rates,
-        'liquidationRisks': liquidation_risks,
-        'whaleTracker': {
-            'daily': daily_top,
-            'weekly': weekly_top,
-            'biggestPositions': biggest_positions
-        },
+        'fundingRates': [{'coin': m['name'], 'rate': m['funding'], 'annualized': m['funding'] * 3 * 365, 'markPx': m['markPx'], 'openInterest': m['openInterest']} for m in funding],
+        'liquidationRisks': liq_risks,
+        'whaleTracker': {'daily': daily, 'weekly': weekly, 'byAccountValue': by_value, 'biggestPositions': biggest},
+        'positionAggregation': {'byPnlDaily': agg_daily, 'byPnlWeekly': agg_weekly, 'bySize': agg_size},
+        'liquidationMap': {'byPnlDaily': liq_daily, 'byPnlWeekly': liq_weekly, 'bySize': liq_size},
         'lastUpdated': datetime.utcnow().isoformat() + 'Z'
     }
     
-    with open(DATA_FILE, 'w') as f:
-        json.dump(output, f, indent=2)
+    with open('data.json', 'w') as f:
+        json.dump(output, f)
     
-    print(f"\nSaved to {DATA_FILE}")
-
+    import os
+    print(f"\n✅ Saved to data.json ({os.path.getsize('data.json') / 1024:.1f} KB)")
 
 if __name__ == '__main__':
     main()
