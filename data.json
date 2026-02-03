@@ -12,10 +12,10 @@
   ],
   "data": {
     "BTC": {
-      "currentPrice": 78365.0,
+      "currentPrice": 78239.0,
       "longLiquidations": [
         {
-          "price": 59087.21,
+          "price": 58992.21,
           "value": 70066018.97177401,
           "cumulative": 133441010.51628101,
           "10x": 0,
@@ -24,7 +24,7 @@
           "100x": 0
         },
         {
-          "price": 62848.73,
+          "price": 62747.68,
           "value": 39692887.195935994,
           "cumulative": 63374991.544507,
           "10x": 0,
@@ -33,7 +33,7 @@
           "100x": 0
         },
         {
-          "price": 70371.77,
+          "price": 70258.62,
           "value": 181297.36862999998,
           "cumulative": 23682104.348571002,
           "10x": 0,
@@ -42,7 +42,7 @@
           "100x": 0
         },
         {
-          "price": 71312.15,
+          "price": 71197.49,
           "value": 2280462.6,
           "cumulative": 23500806.979941003,
           "10x": 2280462.6,
@@ -51,25 +51,16 @@
           "100x": 0
         },
         {
-          "price": 72252.53,
-          "value": 542858.2084430001,
+          "price": 74014.09,
+          "value": 3631576.733277,
           "cumulative": 21220344.379941,
           "10x": 0,
           "25x": 542858.2084430001,
-          "50x": 0,
-          "100x": 0
-        },
-        {
-          "price": 74133.29,
-          "value": 3088718.524834,
-          "cumulative": 20677486.171498,
-          "10x": 0,
-          "25x": 0,
           "50x": 3088718.524834,
           "100x": 0
         },
         {
-          "price": 75073.67,
+          "price": 74952.96,
           "value": 10841061.0,
           "cumulative": 17588767.646664,
           "10x": 0,
@@ -78,7 +69,7 @@
           "100x": 0
         },
         {
-          "price": 76014.05,
+          "price": 75891.83,
           "value": 390565.0,
           "cumulative": 6747706.646664,
           "10x": 0,
@@ -87,56 +78,74 @@
           "100x": 0
         },
         {
-          "price": 76954.43,
-          "value": 6357141.646664,
+          "price": 76830.7,
+          "value": 6342151.10774,
           "cumulative": 6357141.646664,
           "10x": 0,
           "25x": 0,
-          "50x": 6357141.646664,
+          "50x": 6342151.10774,
+          "100x": 0
+        },
+        {
+          "price": 77769.57,
+          "value": 14990.538924,
+          "cumulative": 14990.538924,
+          "10x": 0,
+          "25x": 0,
+          "50x": 14990.538924,
           "100x": 0
         }
       ],
       "shortLiquidations": [
         {
-          "price": 80715.95,
-          "value": 8611.308799999999,
-          "cumulative": 8611.308799999999,
+          "price": 79647.3,
+          "value": 3151.7327680000003,
+          "cumulative": 3151.7327680000003,
           "10x": 0,
-          "25x": 6173.303612,
-          "50x": 2438.0051879999996,
+          "25x": 0,
+          "50x": 3151.7327680000003,
           "100x": 0
         },
         {
-          "price": 83537.09,
+          "price": 80586.17,
+          "value": 6173.303612,
+          "cumulative": 9325.03638,
+          "10x": 0,
+          "25x": 6173.303612,
+          "50x": 0,
+          "100x": 0
+        },
+        {
+          "price": 83402.77,
           "value": 843746.4965799999,
-          "cumulative": 852357.8053799999,
+          "cumulative": 853071.5329599999,
           "10x": 0,
           "25x": 0,
           "50x": 843746.4965799999,
           "100x": 0
         },
         {
-          "price": 85417.85,
+          "price": 85280.51,
           "value": 6801750.0,
-          "cumulative": 7654107.80538,
+          "cumulative": 7654821.5329599995,
           "10x": 0,
           "25x": 6801750.0,
           "50x": 0,
           "100x": 0
         },
         {
-          "price": 86358.23,
+          "price": 86219.38,
           "value": 249999.32937,
-          "cumulative": 7904107.13475,
+          "cumulative": 7904820.86233,
           "10x": 0,
           "25x": 0,
           "50x": 249999.32937,
           "100x": 0
         },
         {
-          "price": 89179.37,
+          "price": 89035.98,
           "value": 13897566.0,
-          "cumulative": 21801673.13475,
+          "cumulative": 21802386.86233,
           "10x": 0,
           "25x": 0,
           "50x": 13897566.0,
@@ -144,32 +153,32 @@
         }
       ],
       "totalLongValue": 133441010.51628101,
-      "totalShortValue": 21801673.13475,
-      "positionCount": 44
+      "totalShortValue": 21802386.862329997,
+      "positionCount": 43
     },
     "ETH": {
-      "currentPrice": 2302.7,
+      "currentPrice": 2297.8,
       "longLiquidations": [
         {
-          "price": 1680.97,
+          "price": 1677.39,
           "value": 9361116.714726,
-          "cumulative": 19272587.341384,
+          "cumulative": 19082009.381384,
           "10x": 0,
           "25x": 9361116.714726,
           "50x": 0,
           "100x": 0
         },
         {
-          "price": 2178.35,
-          "value": 3175756.9132519998,
-          "cumulative": 9911470.626658,
+          "price": 2173.72,
+          "value": 2985178.953252,
+          "cumulative": 9720892.666658,
           "10x": 0,
-          "25x": 3175756.9132519998,
+          "25x": 2985178.953252,
           "50x": 0,
           "100x": 0
         },
         {
-          "price": 2205.99,
+          "price": 2201.29,
           "value": 1349855.194302,
           "cumulative": 6735713.713406,
           "10x": 0,
@@ -178,7 +187,7 @@
           "100x": 0
         },
         {
-          "price": 2261.25,
+          "price": 2256.44,
           "value": 5385858.519104,
           "cumulative": 5385858.519104,
           "10x": 0,
@@ -189,7 +198,7 @@
       ],
       "shortLiquidations": [
         {
-          "price": 2675.74,
+          "price": 2670.04,
           "value": 6663960.199232,
           "cumulative": 6663960.199232,
           "10x": 2999541.199232,
@@ -198,7 +207,7 @@
           "100x": 0
         },
         {
-          "price": 2786.27,
+          "price": 2780.34,
           "value": 2496110.0,
           "cumulative": 9160070.199232,
           "10x": 0,
@@ -207,7 +216,7 @@
           "100x": 0
         },
         {
-          "price": 2869.16,
+          "price": 2890.63,
           "value": 17977020.106051996,
           "cumulative": 27137090.305283997,
           "10x": 0,
@@ -216,15 +225,15 @@
           "100x": 0
         }
       ],
-      "totalLongValue": 19272587.341384,
+      "totalLongValue": 19082009.381384,
       "totalShortValue": 27137090.305283997,
-      "positionCount": 30
+      "positionCount": 32
     },
     "SOL": {
-      "currentPrice": 103.12,
+      "currentPrice": 102.83,
       "longLiquidations": [
         {
-          "price": 90.13,
+          "price": 89.87,
           "value": 218863.36000000002,
           "cumulative": 1141632.0329759999,
           "10x": 0,
@@ -233,7 +242,7 @@
           "100x": 0
         },
         {
-          "price": 98.79,
+          "price": 99.75,
           "value": 922768.6729759999,
           "cumulative": 922768.6729759999,
           "10x": 0,
@@ -244,18 +253,18 @@
       ],
       "shortLiquidations": [
         {
-          "price": 104.98,
-          "value": 22.649,
-          "cumulative": 22.649,
+          "price": 104.68,
+          "value": 79.166934,
+          "cumulative": 79.166934,
           "10x": 0,
-          "25x": 22.649,
+          "25x": 79.166934,
           "50x": 0,
           "100x": 0
         },
         {
-          "price": 116.11,
+          "price": 115.79,
           "value": 2221764.75,
-          "cumulative": 2221787.399,
+          "cumulative": 2221843.916934,
           "10x": 0,
           "25x": 2221764.75,
           "50x": 0,
@@ -263,14 +272,14 @@
         }
       ],
       "totalLongValue": 1141632.0329759999,
-      "totalShortValue": 2221787.399,
-      "positionCount": 18
+      "totalShortValue": 2221843.916934,
+      "positionCount": 19
     },
     "HYPE": {
-      "currentPrice": 35.949,
+      "currentPrice": 35.785,
       "longLiquidations": [
         {
-          "price": 27.11,
+          "price": 26.98,
           "value": 659469.0648,
           "cumulative": 4980422.6708269995,
           "10x": 659469.0648,
@@ -279,7 +288,7 @@
           "100x": 0
         },
         {
-          "price": 30.56,
+          "price": 30.42,
           "value": 3607.0,
           "cumulative": 4320953.606027,
           "10x": 3607.0,
@@ -288,16 +297,25 @@
           "100x": 0
         },
         {
-          "price": 33.14,
-          "value": 2206354.529106,
+          "price": 32.99,
+          "value": 1173256.529106,
           "cumulative": 4317346.606027,
-          "10x": 2206354.529106,
+          "10x": 1173256.529106,
           "25x": 0,
           "50x": 0,
           "100x": 0
         },
         {
-          "price": 34.44,
+          "price": 33.42,
+          "value": 1033098.0,
+          "cumulative": 3144090.0769209997,
+          "10x": 1033098.0,
+          "25x": 0,
+          "50x": 0,
+          "100x": 0
+        },
+        {
+          "price": 34.71,
           "value": 2110992.0769209997,
           "cumulative": 2110992.0769209997,
           "10x": 2110992.0769209997,
@@ -308,30 +326,39 @@
       ],
       "shortLiquidations": [
         {
-          "price": 41.34,
+          "price": 40.29,
+          "value": 365305.323627,
+          "cumulative": 365305.323627,
+          "10x": 365305.323627,
+          "25x": 0,
+          "50x": 0,
+          "100x": 0
+        },
+        {
+          "price": 41.58,
           "value": 157055.151,
-          "cumulative": 157055.151,
+          "cumulative": 522360.474627,
           "10x": 157055.151,
           "25x": 0,
           "50x": 0,
           "100x": 0
         },
         {
-          "price": 45.22,
-          "value": 15365612.958654,
-          "cumulative": 15522668.109654,
-          "10x": 15365612.958654,
+          "price": 45.02,
+          "value": 15401505.680404,
+          "cumulative": 15923866.155031,
+          "10x": 15401505.680404,
           "25x": 0,
           "50x": 0,
           "100x": 0
         }
       ],
       "totalLongValue": 4980422.6708269995,
-      "totalShortValue": 15522668.109654,
-      "positionCount": 36
+      "totalShortValue": 15923866.155031001,
+      "positionCount": 37
     },
     "XRP": {
-      "currentPrice": 1.6099,
+      "currentPrice": 1.6052,
       "longLiquidations": [],
       "shortLiquidations": [],
       "totalLongValue": 0,
@@ -339,7 +366,7 @@
       "positionCount": 16
     },
     "DOGE": {
-      "currentPrice": 0.10767,
+      "currentPrice": 0.10761,
       "longLiquidations": [],
       "shortLiquidations": [],
       "totalLongValue": 0,
@@ -347,15 +374,15 @@
       "positionCount": 10
     },
     "SUI": {
-      "currentPrice": 1.1402,
+      "currentPrice": 1.1406,
       "longLiquidations": [],
       "shortLiquidations": [],
       "totalLongValue": 0,
       "totalShortValue": 0,
-      "positionCount": 8
+      "positionCount": 9
     },
     "LINK": {
-      "currentPrice": 9.6746,
+      "currentPrice": 9.6514,
       "longLiquidations": [],
       "shortLiquidations": [],
       "totalLongValue": 0,
@@ -363,7 +390,7 @@
       "positionCount": 13
     },
     "AVAX": {
-      "currentPrice": 10.144,
+      "currentPrice": 10.127,
       "longLiquidations": [],
       "shortLiquidations": [],
       "totalLongValue": 0,
@@ -398,5 +425,5 @@
     }
   ],
   "tradersCount": 200,
-  "lastUpdated": "2026-02-03T13:16:21.635798Z"
+  "lastUpdated": "2026-02-03T13:25:11.676454Z"
 }
