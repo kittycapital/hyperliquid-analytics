@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>하이퍼리퀴드 분석</title>
+    <title>하이퍼리퀴드 Analytics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; color: #e4e4e7; font-family: 'Noto Sans KR', sans-serif; min-height: 100vh; display: flex; }
-        .sidebar { width: 220px; background: #0f0f14; border-right: 1px solid #1e1e28; padding: 20px 0; position: fixed; height: 100vh; z-index: 100; }
+        body { background: #000; color: #e4e4e7; font-family: 'Noto Sans KR', sans-serif; min-height: 100vh; display: flex; }
+        
+        .sidebar { width: 220px; background: #0a0a0a; border-right: 1px solid #1a1a1a; padding: 20px 0; position: fixed; height: 100vh; z-index: 100; }
         .logo { display: flex; align-items: center; gap: 12px; padding: 0 20px; margin-bottom: 32px; }
         .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #22d3ee, #06b6d4); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #000; }
         .logo-text { font-size: 1.1rem; font-weight: 600; color: #fff; }
@@ -19,6 +21,7 @@
         .nav-item:hover { background: rgba(34, 211, 238, 0.05); color: #e4e4e7; }
         .nav-item.active { background: rgba(34, 211, 238, 0.1); border-left-color: #22d3ee; color: #22d3ee; }
         .nav-icon { width: 18px; height: 18px; }
+        
         .main-content { flex: 1; margin-left: 220px; padding: 24px 32px; min-height: 100vh; }
         .status-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; color: #22d3ee; margin-bottom: 20px; }
         .status-dot { width: 8px; height: 8px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
@@ -28,28 +31,37 @@
         .page-header p { color: #71717a; font-size: 0.85rem; }
         .section { display: none; }
         .section.active { display: block; }
+        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
-        .stat-card { background: #12121a; border: 1px solid #1e1e28; border-radius: 12px; padding: 18px; }
+        .stat-card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; padding: 18px; }
         .stat-label { font-size: 0.7rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
         .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; font-weight: 600; color: #22d3ee; }
-        .card { background: #12121a; border: 1px solid #1e1e28; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
         .card-title { font-size: 0.95rem; font-weight: 600; color: #fff; }
-        .tabs { display: flex; gap: 4px; background: #1a1a24; padding: 4px; border-radius: 8px; }
+        
+        .tabs { display: flex; gap: 4px; background: #111; padding: 4px; border-radius: 8px; }
         .tab { padding: 6px 12px; border-radius: 6px; border: none; background: transparent; color: #71717a; font-family: 'Noto Sans KR', sans-serif; font-size: 0.7rem; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .tab:hover { color: #a1a1aa; }
-        .tab.active { background: #22d3ee; color: #0a0a0f; }
+        .tab.active { background: #22d3ee; color: #000; }
         .controls-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        select { appearance: none; background: #1a1a24 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid #2a2a3a; border-radius: 6px; padding: 6px 28px 6px 10px; color: #e4e4e7; font-family: 'Noto Sans KR', sans-serif; font-size: 0.75rem; cursor: pointer; }
-        .sub-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #1e1e28; padding-bottom: 10px; }
+        select { appearance: none; background: #111 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid #222; border-radius: 6px; padding: 8px 32px 8px 12px; color: #e4e4e7; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; cursor: pointer; min-width: 140px; }
+        select:focus { outline: none; border-color: #22d3ee; }
+        
+        .sub-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #1a1a1a; padding-bottom: 10px; }
         .sub-tab { padding: 8px 16px; border: none; background: transparent; color: #71717a; font-family: 'Noto Sans KR', sans-serif; font-size: 0.8rem; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -11px; }
         .sub-tab:hover { color: #a1a1aa; }
         .sub-tab.active { color: #22d3ee; border-bottom-color: #22d3ee; }
+        
         .table-container { overflow-x: auto; max-height: 55vh; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        thead { position: sticky; top: 0; background: #12121a; z-index: 10; }
-        th { text-align: left; padding: 10px 12px; color: #71717a; font-weight: 500; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #1e1e28; white-space: nowrap; }
-        td { padding: 10px 12px; border-bottom: 1px solid #1e1e28; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; white-space: nowrap; }
+        thead { position: sticky; top: 0; background: #0a0a0a; z-index: 10; }
+        th { text-align: left; padding: 10px 12px; color: #71717a; font-weight: 500; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #1a1a1a; white-space: nowrap; }
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable:hover { color: #22d3ee; }
+        th .sort-icon { margin-left: 4px; opacity: 0.5; }
+        th.sort-active .sort-icon { opacity: 1; color: #22d3ee; }
+        td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; white-space: nowrap; }
         tr:hover { background: rgba(34, 211, 238, 0.02); }
         .rank { color: #71717a; font-weight: 600; }
         .rank.top3 { color: #22d3ee; }
@@ -61,46 +73,45 @@
         .direction.short { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
         .address a { color: #a1a1aa; text-decoration: none; }
         .address a:hover { color: #22d3ee; }
-        .risk-bar { width: 50px; height: 5px; background: #1e1e28; border-radius: 3px; overflow: hidden; }
-        .risk-fill { height: 100%; border-radius: 3px; }
-        .risk-low { background: #22c55e; }
-        .risk-medium { background: #eab308; }
-        .risk-high { background: #ef4444; }
+        
         .expand-btn { background: none; border: none; color: #71717a; cursor: pointer; padding: 4px; display: flex; align-items: center; transition: transform 0.2s; }
         .expand-btn:hover { color: #22d3ee; }
         .expand-btn.expanded { transform: rotate(180deg); }
-        .positions-row { display: none; background: #0f0f14; }
+        .positions-row { display: none; background: #050505; }
         .positions-row.visible { display: table-row; }
         .positions-content { padding: 14px; }
         .positions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-        .position-card { background: #12121a; border: 1px solid #1e1e28; border-radius: 8px; padding: 10px; }
+        .position-card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 10px; cursor: pointer; transition: all 0.2s; }
+        .position-card:hover { border-color: #22d3ee; background: #0f0f0f; }
         .position-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .position-coin { font-weight: 600; color: #fff; font-size: 0.85rem; }
         .position-details { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.65rem; }
         .position-detail { display: flex; justify-content: space-between; }
         .position-detail-label { color: #71717a; }
         .position-detail-value { font-family: 'JetBrains Mono', monospace; color: #e4e4e7; }
+        
         .loading { text-align: center; padding: 50px; color: #71717a; }
-        .loading-spinner { width: 36px; height: 36px; border: 3px solid #1e1e28; border-top-color: #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 14px; }
+        .loading-spinner { width: 36px; height: 36px; border: 3px solid #1a1a1a; border-top-color: #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 14px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .last-updated { font-size: 0.7rem; color: #52525b; text-align: right; margin-top: 14px; }
+        
         .top-markets { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .market-chip { background: #1a1a24; border: 1px solid #1e1e28; border-radius: 8px; padding: 10px; text-align: center; }
+        .market-chip { background: #111; border: 1px solid #1a1a1a; border-radius: 8px; padding: 10px; text-align: center; }
         .market-chip-name { font-weight: 600; color: #fff; margin-bottom: 3px; font-size: 0.85rem; }
         .market-chip-value { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #71717a; }
         .market-chip-change { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; margin-top: 3px; }
-        .funding-bar { width: 70px; height: 6px; background: #1e1e28; border-radius: 3px; position: relative; overflow: hidden; }
+        
+        .funding-bar { width: 70px; height: 6px; background: #1a1a1a; border-radius: 3px; position: relative; overflow: hidden; }
         .funding-fill { position: absolute; height: 100%; border-radius: 3px; }
         .funding-positive { background: #22c55e; left: 50%; }
         .funding-negative { background: #ef4444; right: 50%; }
-
-        /* Charts */
+        
         .chart-container { margin-bottom: 20px; }
         .bar-chart { display: flex; flex-direction: column; gap: 6px; }
         .bar-row { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 10px; height: 28px; }
         .bar-coin { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #fff; text-align: right; }
         .bar-wrapper { display: flex; height: 20px; position: relative; }
-        .bar-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #3a3a4a; }
+        .bar-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #333; }
         .bar-short { position: absolute; right: 50%; height: 100%; background: linear-gradient(to left, #ef4444, #dc2626); border-radius: 3px 0 0 3px; transition: width 0.3s; }
         .bar-long { position: absolute; left: 50%; height: 100%; background: linear-gradient(to right, #22c55e, #16a34a); border-radius: 0 3px 3px 0; transition: width 0.3s; }
         .chart-legend { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; font-size: 0.7rem; }
@@ -108,38 +119,83 @@
         .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
         .legend-dot.short { background: #ef4444; }
         .legend-dot.long { background: #22c55e; }
-
+        
+        /* Liquidation Map */
+        .liq-header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+        .liq-price-box { background: #111; border: 1px solid #222; border-radius: 8px; padding: 8px 16px; text-align: center; }
+        .liq-price-label { font-size: 0.7rem; color: #71717a; margin-bottom: 2px; }
+        .liq-price-value { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 600; color: #22d3ee; }
+        
+        .liq-legend { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+        .liq-legend-section { display: flex; align-items: center; gap: 12px; }
+        .liq-legend-title { font-size: 0.75rem; color: #71717a; }
+        .liq-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
+        .liq-legend-color { width: 12px; height: 12px; border-radius: 2px; }
+        
         .liq-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-        .liq-summary-card { background: #1a1a24; border: 1px solid #1e1e28; border-radius: 10px; padding: 14px; text-align: center; }
+        .liq-summary-card { background: linear-gradient(135deg, #0a0a0a 0%, #111 100%); border: 1px solid #1a1a1a; border-radius: 10px; padding: 14px; text-align: center; }
+        .liq-summary-card.long-card { border-color: #ef444444; }
+        .liq-summary-card.short-card { border-color: #22c55e44; }
         .liq-summary-label { font-size: 0.7rem; color: #71717a; margin-bottom: 4px; }
-        .liq-summary-value { font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 600; }
-        .liq-summary-value.long { color: #22c55e; }
-        .liq-summary-value.short { color: #ef4444; }
-
-        .liq-chart-container { position: relative; height: 280px; background: #0f0f14; border-radius: 8px; padding: 16px; overflow: hidden; }
-        .liq-chart { display: flex; align-items: flex-end; justify-content: space-around; height: 200px; position: relative; border-bottom: 1px solid #2a2a3a; }
-        .liq-bar-group { display: flex; flex-direction: column; align-items: center; position: relative; cursor: pointer; flex: 1; max-width: 40px; }
-        .liq-bar { width: 24px; display: flex; flex-direction: column; justify-content: flex-end; }
-        .liq-bar-segment { width: 100%; transition: height 0.3s; }
-        .liq-bar-10x { background: #3b82f6; }
-        .liq-bar-25x { background: #eab308; }
-        .liq-bar-50x { background: #f97316; }
-        .liq-bar-100x { background: #ef4444; }
-        .liq-bar-label { font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: #71717a; margin-top: 6px; transform: rotate(-45deg); white-space: nowrap; }
-        .liq-current-price { position: absolute; top: 0; bottom: 0; width: 2px; background: #22d3ee; }
-        .liq-current-price::after { content: attr(data-price); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); background: #22d3ee; color: #000; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 600; white-space: nowrap; }
-        .liq-legend { display: flex; justify-content: center; gap: 16px; margin-top: 12px; font-size: 0.65rem; }
-        .liq-legend-item { display: flex; align-items: center; gap: 5px; color: #a1a1aa; }
-        .liq-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
-        .no-data { text-align: center; padding: 40px; color: #52525b; font-size: 0.85rem; }
-
-        .tooltip { position: fixed; background: #1a1a24; border: 1px solid #3a3a4a; border-radius: 8px; padding: 10px 12px; font-size: 0.7rem; z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.15s; max-width: 200px; }
+        .liq-summary-value { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; font-weight: 600; }
+        .liq-summary-value.long { color: #ef4444; }
+        .liq-summary-value.short { color: #22c55e; }
+        
+        .liq-chart-box { background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%); border: 1px solid #1a1a1a; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .liq-chart-wrapper { position: relative; height: 380px; }
+        
+        /* Guide Section */
+        .guide-section { background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%); border: 1px solid #1a1a1a; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .guide-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .guide-header.expanded { margin-bottom: 16px; }
+        .guide-title { font-size: 0.9rem; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .guide-toggle { color: #71717a; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; }
+        .guide-content { display: none; }
+        .guide-content.show { display: block; }
+        .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+        .guide-card { background: #111; border-radius: 8px; padding: 14px; }
+        .guide-card-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .guide-card-content { font-size: 0.7rem; color: #a1a1aa; line-height: 1.6; }
+        .guide-card-content strong { color: #fff; }
+        .guide-card-content .bullish { color: #22c55e; }
+        .guide-card-content .bearish { color: #ef4444; }
+        
+        /* Position Chart Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.visible { display: flex; }
+        .modal { background: #0a0a0a; border: 1px solid #222; border-radius: 16px; width: 100%; max-width: 700px; max-height: 90vh; overflow: hidden; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #1a1a1a; }
+        .modal-title { display: flex; align-items: center; gap: 12px; }
+        .modal-coin { font-size: 1.1rem; font-weight: 600; color: #fff; }
+        .modal-direction { padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+        .modal-direction.long { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .modal-direction.short { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .modal-timeframes { display: flex; gap: 4px; }
+        .tf-btn { padding: 6px 10px; border: 1px solid #333; border-radius: 6px; background: transparent; color: #71717a; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; }
+        .tf-btn:hover { border-color: #22d3ee; color: #22d3ee; }
+        .tf-btn.active { background: #22d3ee; border-color: #22d3ee; color: #000; }
+        .modal-close { background: none; border: none; color: #71717a; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .modal-close:hover { background: #1a1a1a; color: #fff; }
+        .modal-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 16px 20px; border-bottom: 1px solid #1a1a1a; background: #050505; }
+        .modal-stat { text-align: center; }
+        .modal-stat-label { font-size: 0.65rem; color: #71717a; margin-bottom: 4px; }
+        .modal-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600; color: #fff; }
+        .modal-chart { padding: 20px; height: 300px; position: relative; }
+        .modal-legend { display: flex; justify-content: center; gap: 20px; padding: 12px 20px; border-top: 1px solid #1a1a1a; font-size: 0.7rem; }
+        .modal-legend-item { display: flex; align-items: center; gap: 6px; }
+        .modal-legend-line { width: 20px; height: 2px; border-radius: 1px; }
+        .modal-legend-line.entry { background: #ef4444; border-style: dashed; }
+        .modal-legend-line.current { background: #22d3ee; }
+        .modal-loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #71717a; }
+        
+        .tooltip { position: fixed; background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; font-size: 0.7rem; z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.15s; max-width: 200px; }
         .tooltip.visible { opacity: 1; }
         .tooltip-title { font-weight: 600; color: #fff; margin-bottom: 6px; }
         .tooltip-row { display: flex; justify-content: space-between; gap: 12px; margin: 2px 0; }
         .tooltip-label { color: #71717a; }
         .tooltip-value { font-family: 'JetBrains Mono', monospace; }
-
+        .no-data { text-align: center; padding: 40px; color: #52525b; font-size: 0.85rem; }
+        
         @media (max-width: 768px) {
             .sidebar { width: 56px; padding: 10px 0; }
             .logo-text, .logo-sub, .nav-item span { display: none; }
@@ -148,6 +204,8 @@
             .stats-grid { grid-template-columns: 1fr 1fr; }
             .liq-summary { grid-template-columns: 1fr; }
             .controls-row { flex-direction: column; align-items: flex-start; }
+            .liq-chart-wrapper { height: 280px; }
+            .modal-stats { grid-template-columns: repeat(3, 1fr); }
         }
     </style>
 </head>
@@ -155,29 +213,14 @@
     <nav class="sidebar">
         <div class="logo">
             <div class="logo-icon">HL</div>
-            <div><span class="logo-text">Hyperliquid</span><span class="logo-sub">Analytics</span></div>
+            <div><span class="logo-text">하이퍼리퀴드</span><span class="logo-sub">Analytics</span></div>
         </div>
         <ul class="nav-menu">
-            <li class="nav-item active" data-section="dashboard">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                <span>대시보드</span>
-            </li>
-            <li class="nav-item" data-section="markets">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                <span>마켓 & OI</span>
-            </li>
-            <li class="nav-item" data-section="funding">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                <span>펀딩비</span>
-            </li>
-            <li class="nav-item" data-section="liquidation">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                <span>청산 위험</span>
-            </li>
-            <li class="nav-item" data-section="whales">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                <span>고래 추적기</span>
-            </li>
+            <li class="nav-item active" data-section="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>대시보드</span></li>
+            <li class="nav-item" data-section="markets"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>마켓 & OI</span></li>
+            <li class="nav-item" data-section="funding"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>펀딩비</span></li>
+            <li class="nav-item" data-section="liquidation"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>청산 지도</span></li>
+            <li class="nav-item" data-section="whales"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg><span>고래 추적기</span></li>
         </ul>
     </nav>
 
@@ -186,7 +229,7 @@
 
         <!-- Dashboard -->
         <section id="dashboard" class="section active">
-            <div class="page-header"><h1>📊 대시보드</h1><p>Hyperliquid 프로토콜 실시간 거래 현황</p></div>
+            <div class="page-header"><h1>📊 대시보드</h1><p>하이퍼리퀴드 프로토콜 실시간 거래 현황</p></div>
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-label">24시간 거래량</div><div class="stat-value" id="stat-vol">-</div></div>
                 <div class="stat-card"><div class="stat-label">총 미결제약정</div><div class="stat-value" id="stat-oi">-</div></div>
@@ -206,47 +249,84 @@
         <!-- Funding -->
         <section id="funding" class="section">
             <div class="page-header"><h1>💰 펀딩비</h1><p>현재 펀딩비 및 연간화 수익률</p></div>
-            <div class="card"><div class="table-container"><table><thead><tr><th>#</th><th>마켓</th><th>현재 펀딩비</th><th>펀딩비 (시각화)</th><th>연간화 APY</th><th>마크 가격</th><th>미결제약정</th></tr></thead><tbody id="funding-tbody"><tr><td colspan="7"><div class="loading"><div class="loading-spinner"></div>로딩 중...</div></td></tr></tbody></table></div></div>
+            
+            <!-- Funding Guide -->
+            <div class="guide-section">
+                <div class="guide-header" onclick="toggleFundingGuide()">
+                    <div class="guide-title">💡 펀딩비 가이드</div>
+                    <div class="guide-toggle"><span id="funding-guide-toggle-text">펼치기</span><svg id="funding-guide-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                </div>
+                <div class="guide-content" id="funding-guide-content">
+                    <div class="guide-grid">
+                        <div class="guide-card"><div class="guide-card-title">📌 펀딩비란?</div><div class="guide-card-content">펀딩비는 <strong>롱/숏 포지션 간 균형</strong>을 유지하기 위한 비용입니다.<br><strong>8시간마다</strong> 정산됩니다.</div></div>
+                        <div class="guide-card"><div class="guide-card-title"><span class="bullish">▲</span> 양수 펀딩비</div><div class="guide-card-content"><strong class="bullish">롱이 숏에게 지불</strong><br>롱 포지션이 많음 (롱 우세)<br>→ 롱 진입 비용 ↑</div></div>
+                        <div class="guide-card"><div class="guide-card-title"><span class="bearish">▼</span> 음수 펀딩비</div><div class="guide-card-content"><strong class="bearish">숏이 롱에게 지불</strong><br>숏 포지션이 많음 (숏 우세)<br>→ 숏 진입 비용 ↑</div></div>
+                        <div class="guide-card"><div class="guide-card-title">💰 연간화 APY</div><div class="guide-card-content">펀딩비 × 3회 × 365일<br>= <strong>연간 예상 수익률</strong><br>펀딩비 수취 전략에 활용</div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card"><div class="table-container"><table><thead><tr>
+                <th>#</th>
+                <th>마켓</th>
+                <th class="sortable" data-sort="funding" onclick="sortFunding('funding')">현재 펀딩비 <span class="sort-icon">↕</span></th>
+                <th>펀딩비 (시각화)</th>
+                <th class="sortable" data-sort="apy" onclick="sortFunding('apy')">연간화 APY <span class="sort-icon">↕</span></th>
+                <th>마크 가격</th>
+                <th>미결제약정</th>
+            </tr></thead><tbody id="funding-tbody"><tr><td colspan="7"><div class="loading"><div class="loading-spinner"></div>로딩 중...</div></td></tr></tbody></table></div></div>
         </section>
 
-        <!-- Liquidation -->
+        <!-- Liquidation Map -->
         <section id="liquidation" class="section">
-            <div class="page-header"><h1>⚠️ 청산 위험</h1><p>고래 포지션 청산 지도 및 위험 분석</p></div>
+            <div class="page-header"><h1>⚠️ 청산 지도</h1><p>Top 200 트레이더 기준 청산 가격 분포</p></div>
             
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">🗺️ 청산 지도</h3>
-                    <div class="controls-row">
-                        <div class="tabs" id="liq-data-tabs"><button class="tab active" data-v="pnl">PnL 상위 200</button><button class="tab" data-v="size">포지션 사이즈 기준</button></div>
-                        <div class="tabs" id="liq-period-tabs"><button class="tab active" data-v="daily">일간</button><button class="tab" data-v="weekly">주간</button></div>
-                        <select id="liq-coin"><option value="BTC">BTC</option></select>
+                <div class="liq-header-row">
+                    <div class="controls-row"><select id="liq-coin"><option value="">로딩 중...</option></select></div>
+                    <div class="liq-price-box"><div class="liq-price-label">현재 가격</div><div class="liq-price-value" id="liq-current-price">-</div></div>
+                </div>
+                <div class="liq-legend">
+                    <div class="liq-legend-section">
+                        <span class="liq-legend-title">레버리지:</span>
+                        <div class="liq-legend-item"><div class="liq-legend-color" style="background:#3b82f6"></div>10x</div>
+                        <div class="liq-legend-item"><div class="liq-legend-color" style="background:#eab308"></div>25x</div>
+                        <div class="liq-legend-item"><div class="liq-legend-color" style="background:#f97316"></div>50x</div>
+                        <div class="liq-legend-item"><div class="liq-legend-color" style="background:#ef4444"></div>100x</div>
                     </div>
                 </div>
                 <div class="liq-summary">
-                    <div class="liq-summary-card"><div class="liq-summary-label">누적 롱 청산</div><div class="liq-summary-value long" id="liq-long">$0</div></div>
-                    <div class="liq-summary-card"><div class="liq-summary-label">누적 숏 청산</div><div class="liq-summary-value short" id="liq-short">$0</div></div>
+                    <div class="liq-summary-card long-card"><div class="liq-summary-label">누적 롱 청산</div><div class="liq-summary-value long" id="liq-total-long">-</div></div>
+                    <div class="liq-summary-card short-card"><div class="liq-summary-label">누적 숏 청산</div><div class="liq-summary-value short" id="liq-total-short">-</div></div>
                 </div>
-                <div class="liq-chart-container"><div id="liq-chart" class="liq-chart"></div></div>
-                <div class="liq-legend">
-                    <div class="liq-legend-item"><div class="liq-legend-dot" style="background:#3b82f6"></div>10x</div>
-                    <div class="liq-legend-item"><div class="liq-legend-dot" style="background:#eab308"></div>25x</div>
-                    <div class="liq-legend-item"><div class="liq-legend-dot" style="background:#f97316"></div>50x</div>
-                    <div class="liq-legend-item"><div class="liq-legend-dot" style="background:#ef4444"></div>100x</div>
-                </div>
+                <div class="liq-chart-box"><div class="liq-chart-wrapper"><canvas id="liq-chart"></canvas></div></div>
             </div>
 
-            <div class="card"><div class="card-header"><h3 class="card-title">청산 위험 포지션</h3></div><div class="table-container"><table><thead><tr><th>#</th><th>코인</th><th>방향</th><th>포지션 가치</th><th>현재가</th><th>청산가</th><th>거리</th><th>위험도</th><th>레버리지</th><th>트레이더</th></tr></thead><tbody id="liq-tbody"><tr><td colspan="10"><div class="loading"><div class="loading-spinner"></div>로딩 중...</div></td></tr></tbody></table></div></div>
+            <div class="guide-section">
+                <div class="guide-header" onclick="toggleGuide()">
+                    <div class="guide-title">📊 청산 지도 활용 가이드</div>
+                    <div class="guide-toggle"><span id="guide-toggle-text">펼치기</span><svg id="guide-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                </div>
+                <div class="guide-content" id="guide-content">
+                    <div class="guide-grid">
+                        <div class="guide-card"><div class="guide-card-title">🔴 롱 청산 구간 (아래쪽)</div><div class="guide-card-content">현재가 아래에 롱 청산이 쌓여있으면,<br>가격 하락 시 <strong class="bearish">연쇄 청산</strong>으로 급락 가능.<br><br><strong>트레이딩 힌트:</strong> 롱 청산이 많은 가격대는 강한 지지선이 되거나, 뚫리면 급락 트리거가 됨.</div></div>
+                        <div class="guide-card"><div class="guide-card-title">🟢 숏 청산 구간 (위쪽)</div><div class="guide-card-content">현재가 위에 숏 청산이 쌓여있으면,<br>가격 상승 시 <strong class="bullish">숏 스퀴즈</strong>로 급등 가능.<br><br><strong>트레이딩 힌트:</strong> 숏 청산이 많은 가격대는 저항선이 되거나, 뚫리면 급등 트리거가 됨.</div></div>
+                        <div class="guide-card"><div class="guide-card-title">📈 레버리지 색상</div><div class="guide-card-content"><strong style="color:#3b82f6">■ 10x</strong> - 낮은 레버리지 (안정적)<br><strong style="color:#eab308">■ 25x</strong> - 중간 레버리지<br><strong style="color:#f97316">■ 50x</strong> - 높은 레버리지<br><strong style="color:#ef4444">■ 100x</strong> - 극단적 레버리지 (변동성 취약)</div></div>
+                        <div class="guide-card"><div class="guide-card-title">💡 활용 팁</div><div class="guide-card-content">• <strong>청산 밀집 구간</strong>: 가격 도달 시 급격한 움직임 예상<br>• <strong>누적 라인</strong>: 어느 방향에 더 많은 청산이 있는지 파악<br>• <strong>고레버리지</strong>: 작은 가격 변동에도 청산 발생</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="last-updated" id="liq-last-updated"></div>
         </section>
 
         <!-- Whales -->
         <section id="whales" class="section">
             <div class="page-header"><h1>🐋 고래 추적기</h1><p>상위 트레이더 포지션 및 PnL 분석</p></div>
-            
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">📊 탑 트레이더 포지션 집계</h3>
                     <div class="controls-row">
-                        <div class="tabs" id="pos-data-tabs"><button class="tab active" data-v="pnl">PnL 상위 200</button><button class="tab" data-v="size">포지션 사이즈 기준</button></div>
+                        <div class="tabs" id="pos-data-tabs"><button class="tab active" data-v="pnl">PnL 상위 200</button><button class="tab" data-v="size">상위 200 포지션 사이즈</button></div>
                         <div class="tabs" id="pos-period-tabs"><button class="tab active" data-v="daily">일간</button><button class="tab" data-v="weekly">주간</button></div>
                         <div class="tabs" id="pos-unit-tabs"><button class="tab active" data-v="value">금액($)</button><button class="tab" data-v="size">수량</button></div>
                     </div>
@@ -254,47 +334,98 @@
                 <div class="chart-legend"><div class="legend-item"><div class="legend-dot short"></div>숏</div><div class="legend-item"><div class="legend-dot long"></div>롱</div></div>
                 <div class="chart-container"><div id="pos-chart" class="bar-chart"></div></div>
             </div>
-
-            <div class="sub-tabs">
-                <button class="sub-tab active" data-tab="pnl">📈 PnL 상위 트레이더</button>
-                <button class="sub-tab" data-tab="biggest">💎 최대 포지션 (OI)</button>
-            </div>
-
-            <div id="pnl-section">
-                <div class="card">
-                    <div class="card-header"><h3 class="card-title">PnL 상위 200</h3><div class="tabs" id="trader-tabs"><button class="tab active" data-v="daily">일간</button><button class="tab" data-v="weekly">주간</button></div></div>
-                    <div class="table-container"><table><thead><tr><th>순위</th><th>트레이더</th><th>계좌 가치</th><th>수익 (PnL)</th><th>수익률</th><th>거래량</th><th></th></tr></thead><tbody id="pnl-tbody"><tr><td colspan="7"><div class="loading"><div class="loading-spinner"></div>로딩 중...</div></td></tr></tbody></table></div>
-                </div>
-            </div>
-
-            <div id="biggest-section" style="display:none;">
-                <div class="card">
-                    <div class="card-header"><h3 class="card-title">최대 포지션 상위 200</h3></div>
-                    <div class="table-container"><table><thead><tr><th>순위</th><th>코인</th><th>방향</th><th>포지션 가치</th><th>수량</th><th>진입가</th><th>레버리지</th><th>미실현 PnL</th><th>트레이더</th></tr></thead><tbody id="biggest-tbody"><tr><td colspan="9"><div class="loading"><div class="loading-spinner"></div>로딩 중...</div></td></tr></tbody></table></div>
-                </div>
-            </div>
+            <div class="sub-tabs"><button class="sub-tab active" data-tab="pnl">📈 PnL 상위 트레이더</button><button class="sub-tab" data-tab="biggest">💎 최대 포지션 (OI)</button></div>
+            <div id="pnl-section"><div class="card"><div class="card-header"><h3 class="card-title">PnL 상위 200</h3><div class="tabs" id="trader-tabs"><button class="tab active" data-v="daily">일간</button><button class="tab" data-v="weekly">주간</button></div></div><div class="table-container"><table><thead><tr><th>순위</th><th>트레이더</th><th>계좌 가치</th><th>수익 (PnL)</th><th>수익률</th><th>거래량</th><th></th></tr></thead><tbody id="pnl-tbody"><tr><td colspan="7"><div class="loading"><div class="loading-spinner"></div>로딩 중...</div></td></tr></tbody></table></div></div></div>
+            <div id="biggest-section" style="display:none;"><div class="card"><div class="card-header"><h3 class="card-title">최대 포지션 상위 200</h3></div><div class="table-container"><table><thead><tr><th>순위</th><th>코인</th><th>방향</th><th>포지션 가치</th><th>수량</th><th>진입가</th><th>레버리지</th><th>미실현 PnL</th><th>트레이더</th></tr></thead><tbody id="biggest-tbody"><tr><td colspan="9"><div class="loading"><div class="loading-spinner"></div>로딩 중...</div></td></tr></tbody></table></div></div></div>
         </section>
 
         <div class="last-updated" id="last-updated"></div>
     </main>
 
+    <!-- Position Chart Modal -->
+    <div class="modal-overlay" id="position-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="modal-coin" id="modal-coin">BTC</span>
+                    <span class="modal-direction" id="modal-direction">LONG</span>
+                </div>
+                <div class="modal-timeframes">
+                    <button class="tf-btn" data-tf="5m">5m</button>
+                    <button class="tf-btn" data-tf="15m">15m</button>
+                    <button class="tf-btn active" data-tf="1h">1h</button>
+                    <button class="tf-btn" data-tf="4h">4h</button>
+                    <button class="tf-btn" data-tf="1D">1D</button>
+                </div>
+                <button class="modal-close" onclick="closePositionModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-stats">
+                <div class="modal-stat"><div class="modal-stat-label">Size</div><div class="modal-stat-value" id="modal-size">-</div></div>
+                <div class="modal-stat"><div class="modal-stat-label">Entry</div><div class="modal-stat-value" id="modal-entry">-</div></div>
+                <div class="modal-stat"><div class="modal-stat-label">Current</div><div class="modal-stat-value" id="modal-current">-</div></div>
+                <div class="modal-stat"><div class="modal-stat-label">Leverage</div><div class="modal-stat-value" id="modal-leverage">-</div></div>
+                <div class="modal-stat"><div class="modal-stat-label">Unrealized PnL</div><div class="modal-stat-value" id="modal-pnl">-</div></div>
+            </div>
+            <div class="modal-chart">
+                <canvas id="position-chart"></canvas>
+                <div class="modal-loading" id="modal-loading"><div class="loading-spinner"></div>차트 로딩 중...</div>
+            </div>
+            <div class="modal-legend">
+                <div class="modal-legend-item"><div class="modal-legend-line entry" style="border-top: 2px dashed #ef4444; height: 0;"></div>Entry Price</div>
+                <div class="modal-legend-item"><div class="modal-legend-line current"></div>Current Price</div>
+            </div>
+        </div>
+    </div>
+
     <div class="tooltip" id="tooltip"></div>
 
     <script>
-        let data = null, live = null;
-        let posData = 'pnl', posPeriod = 'daily', posUnit = 'value';
-        let liqData = 'pnl', liqPeriod = 'daily', liqCoin = 'BTC';
-        let traderPeriod = 'daily';
+        let whaleData = null, liqData = null, live = null, liqChart = null, positionChart = null;
+        let guideExpanded = false, fundingGuideExpanded = false;
+        let posData = 'pnl', posPeriod = 'daily', posUnit = 'value', traderPeriod = 'daily';
+        let selectedLiqCoin = 'BTC';
+        let fundingSortField = 'funding', fundingSortDir = 'desc';
+        let currentPosition = null, currentTimeframe = '1h';
 
         const fmt = {
             usd: v => { const n = Math.abs(parseFloat(v)||0); return (v<0?'-':'')+'$'+(n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(0)); },
             pct: v => { const n = parseFloat(v)||0; return (n>=0?'+':'')+n.toFixed(2)+'%'; },
             pctDec: v => { const n = (parseFloat(v)||0)*100; return (n>=0?'+':'')+n.toFixed(2)+'%'; },
             fund: v => { const n = parseFloat(v)||0; return (n>=0?'+':'')+n.toFixed(4)+'%'; },
-            px: v => { const n = parseFloat(v)||0; return n>=1000?n.toLocaleString('en',{maximumFractionDigits:0}):n>=1?n.toFixed(2):n>=0.0001?n.toFixed(4):n.toFixed(6); },
+            px: (v, coin) => { const n = parseFloat(v)||0; if (coin === 'PEPE' || n < 0.001) return '$' + n.toFixed(8); if (n < 1) return '$' + n.toFixed(4); if (n < 100) return '$' + n.toFixed(2); return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 }); },
             num: v => { const n = parseFloat(v)||0; return Math.abs(n)>=1e6?(n/1e6).toFixed(2)+'M':Math.abs(n)>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(2); },
             addr: a => a ? a.slice(0,6)+'...'+a.slice(-4) : '-'
         };
+
+        function toggleGuide() {
+            guideExpanded = !guideExpanded;
+            document.getElementById('guide-content').classList.toggle('show', guideExpanded);
+            document.getElementById('guide-toggle-text').textContent = guideExpanded ? '접기' : '펼치기';
+            document.getElementById('guide-arrow').style.transform = guideExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function toggleFundingGuide() {
+            fundingGuideExpanded = !fundingGuideExpanded;
+            document.getElementById('funding-guide-content').classList.toggle('show', fundingGuideExpanded);
+            document.getElementById('funding-guide-toggle-text').textContent = fundingGuideExpanded ? '접기' : '펼치기';
+            document.getElementById('funding-guide-arrow').style.transform = fundingGuideExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function sortFunding(field) {
+            if (fundingSortField === field) {
+                fundingSortDir = fundingSortDir === 'desc' ? 'asc' : 'desc';
+            } else {
+                fundingSortField = field;
+                fundingSortDir = 'desc';
+            }
+            document.querySelectorAll('#funding th.sortable').forEach(th => {
+                th.classList.remove('sort-active');
+                if (th.dataset.sort === field) th.classList.add('sort-active');
+            });
+            renderFunding();
+        }
 
         async function fetchLive() {
             try {
@@ -313,45 +444,135 @@
                     document.getElementById('stat-oi').textContent = fmt.usd(oi);
                     document.getElementById('stat-mkts').textContent = Object.keys(live).length;
                     renderLive();
+                    renderFunding();
                 }
             } catch(e) { console.error(e); }
         }
 
-        function getMarkets() { return live ? Object.values(live).sort((a,b) => b.openInterest - a.openInterest) : (data?.markets || []); }
+        function getMarkets() { return live ? Object.values(live).sort((a,b) => b.openInterest - a.openInterest) : []; }
 
         function renderLive() {
             const mkts = getMarkets();
             document.getElementById('top-markets').innerHTML = mkts.slice(0,8).map(m => `<div class="market-chip"><div class="market-chip-name">${m.name}</div><div class="market-chip-value">${fmt.usd(m.volume24h)}</div><div class="market-chip-change ${m.change24h>=0?'positive':'negative'}">${fmt.pct(m.change24h)}</div></div>`).join('');
-            document.getElementById('dash-markets').innerHTML = mkts.slice(0,20).map(m => `<tr><td class="coin-name">${m.name}</td><td>${fmt.px(m.markPx)}</td><td class="${m.change24h>=0?'positive':'negative'}">${fmt.pct(m.change24h)}</td><td>${fmt.usd(m.volume24h)}</td><td>${fmt.usd(m.openInterest)}</td><td class="${m.funding>=0?'positive':'negative'}">${fmt.fund(m.funding)}</td></tr>`).join('');
-            document.getElementById('markets-tbody').innerHTML = mkts.map((m,i) => `<tr><td><span class="rank ${i<3?'top3':''}">${i+1}</span></td><td class="coin-name">${m.name}</td><td>${fmt.px(m.markPx)}</td><td>${fmt.px(m.indexPx)}</td><td class="${m.change24h>=0?'positive':'negative'}">${fmt.pct(m.change24h)}</td><td>${fmt.usd(m.volume24h)}</td><td>${fmt.usd(m.openInterest)}</td><td>${fmt.num(m.openInterestCoins)}</td><td class="${m.funding>=0?'positive':'negative'}">${fmt.fund(m.funding)}</td><td>${m.maxLeverage}x</td></tr>`).join('');
-            const fund = mkts.slice(0,50).sort((a,b) => Math.abs(b.funding)-Math.abs(a.funding));
-            const maxF = Math.max(...fund.map(f => Math.abs(f.funding)))||0.01;
-            document.getElementById('funding-tbody').innerHTML = fund.map((f,i) => { const w = Math.min((Math.abs(f.funding)/maxF)*50,50); return `<tr><td><span class="rank ${i<3?'top3':''}">${i+1}</span></td><td class="coin-name">${f.name}</td><td class="${f.funding>=0?'positive':'negative'}">${fmt.fund(f.funding)}</td><td><div class="funding-bar"><div class="funding-fill ${f.funding>=0?'funding-positive':'funding-negative'}" style="${f.funding>=0?'left:50%;':'right:50%;'}width:${w}%"></div></div></td><td class="${f.funding>=0?'positive':'negative'}">${fmt.pct(f.funding*3*365)}</td><td>${fmt.px(f.markPx)}</td><td>${fmt.usd(f.openInterest)}</td></tr>`; }).join('');
+            document.getElementById('dash-markets').innerHTML = mkts.slice(0,20).map(m => `<tr><td class="coin-name">${m.name}</td><td>${fmt.px(m.markPx, m.name)}</td><td class="${m.change24h>=0?'positive':'negative'}">${fmt.pct(m.change24h)}</td><td>${fmt.usd(m.volume24h)}</td><td>${fmt.usd(m.openInterest)}</td><td class="${m.funding>=0?'positive':'negative'}">${fmt.fund(m.funding)}</td></tr>`).join('');
+            document.getElementById('markets-tbody').innerHTML = mkts.map((m,i) => `<tr><td><span class="rank ${i<3?'top3':''}">${i+1}</span></td><td class="coin-name">${m.name}</td><td>${fmt.px(m.markPx, m.name)}</td><td>${fmt.px(m.indexPx, m.name)}</td><td class="${m.change24h>=0?'positive':'negative'}">${fmt.pct(m.change24h)}</td><td>${fmt.usd(m.volume24h)}</td><td>${fmt.usd(m.openInterest)}</td><td>${fmt.num(m.openInterestCoins)}</td><td class="${m.funding>=0?'positive':'negative'}">${fmt.fund(m.funding)}</td><td>${m.maxLeverage}x</td></tr>`).join('');
         }
 
-        function renderLiqRisks() {
-            const risks = data?.liquidationRisks || [];
-            document.getElementById('liq-tbody').innerHTML = risks.length ? risks.map((r,i) => { const lvl = r.distancePct<10?'high':r.distancePct<25?'medium':'low'; return `<tr><td><span class="rank ${i<3?'top3':''}">${i+1}</span></td><td class="coin-name">${r.coin}</td><td><span class="direction ${r.direction.toLowerCase()}">${r.direction==='Long'?'롱':'숏'}</span></td><td>${fmt.usd(r.positionValue)}</td><td>${fmt.px(r.currentPx)}</td><td>${fmt.px(r.liquidationPx)}</td><td>${r.distancePct.toFixed(1)}%</td><td><div class="risk-bar"><div class="risk-fill risk-${lvl}" style="width:${Math.max(100-r.distancePct*2,10)}%"></div></div></td><td>${r.leverage}x</td><td class="address"><a href="https://app.hyperliquid.xyz/explorer/address/${r.traderAddress}" target="_blank">${fmt.addr(r.traderAddress)}</a></td></tr>`; }).join('') : '<tr><td colspan="10" class="no-data">청산 위험 포지션 없음</td></tr>';
+        function renderFunding() {
+            if (!live) return;
+            let fund = Object.values(live).slice(0,50);
+            if (fundingSortField === 'funding') {
+                fund.sort((a,b) => fundingSortDir === 'desc' ? Math.abs(b.funding)-Math.abs(a.funding) : Math.abs(a.funding)-Math.abs(b.funding));
+            } else {
+                fund.sort((a,b) => { const apyA = Math.abs(a.funding)*3*365, apyB = Math.abs(b.funding)*3*365; return fundingSortDir === 'desc' ? apyB-apyA : apyA-apyB; });
+            }
+            const maxF = Math.max(...fund.map(f => Math.abs(f.funding)))||0.01;
+            document.getElementById('funding-tbody').innerHTML = fund.map((f,i) => { const w = Math.min((Math.abs(f.funding)/maxF)*50,50); return `<tr><td><span class="rank ${i<3?'top3':''}">${i+1}</span></td><td class="coin-name">${f.name}</td><td class="${f.funding>=0?'positive':'negative'}">${fmt.fund(f.funding)}</td><td><div class="funding-bar"><div class="funding-fill ${f.funding>=0?'funding-positive':'funding-negative'}" style="${f.funding>=0?'left:50%;':'right:50%;'}width:${w}%"></div></div></td><td class="${f.funding>=0?'positive':'negative'}">${fmt.pct(f.funding*3*365)}</td><td>${fmt.px(f.markPx, f.name)}</td><td>${fmt.usd(f.openInterest)}</td></tr>`; }).join('');
+        }
+
+        function updateLiqChart() {
+            if (!liqData || !selectedLiqCoin) return;
+            const coinData = liqData.data[selectedLiqCoin];
+            if (!coinData) return;
+            
+            document.getElementById('liq-current-price').textContent = fmt.px(coinData.currentPrice, selectedLiqCoin);
+            document.getElementById('liq-total-long').textContent = fmt.usd(coinData.totalLongValue);
+            document.getElementById('liq-total-short').textContent = fmt.usd(coinData.totalShortValue);
+            
+            const longData = coinData.longLiquidations || [];
+            const shortData = coinData.shortLiquidations || [];
+            
+            if (longData.length === 0 && shortData.length === 0) {
+                if (liqChart) { liqChart.destroy(); liqChart = null; }
+                document.querySelector('.liq-chart-wrapper').innerHTML = '<div class="no-data" style="height:380px;display:flex;align-items:center;justify-content:center;">선택한 코인의 청산 데이터가 없습니다</div>';
+                return;
+            }
+            
+            const wrapper = document.querySelector('.liq-chart-wrapper');
+            if (!wrapper.querySelector('canvas')) wrapper.innerHTML = '<canvas id="liq-chart"></canvas>';
+            
+            const allPrices = [...new Set([...longData.map(d => d.price), ...shortData.map(d => d.price)])].sort((a, b) => a - b);
+            const longMap = {}, shortMap = {};
+            longData.forEach(d => longMap[d.price] = d);
+            shortData.forEach(d => shortMap[d.price] = d);
+            
+            const labels = allPrices.map(p => fmt.px(p, selectedLiqCoin));
+            const long10x = allPrices.map(p => longMap[p] ? -longMap[p]['10x'] : 0);
+            const long25x = allPrices.map(p => longMap[p] ? -longMap[p]['25x'] : 0);
+            const long50x = allPrices.map(p => longMap[p] ? -longMap[p]['50x'] : 0);
+            const long100x = allPrices.map(p => longMap[p] ? -longMap[p]['100x'] : 0);
+            const short10x = allPrices.map(p => shortMap[p] ? shortMap[p]['10x'] : 0);
+            const short25x = allPrices.map(p => shortMap[p] ? shortMap[p]['25x'] : 0);
+            const short50x = allPrices.map(p => shortMap[p] ? shortMap[p]['50x'] : 0);
+            const short100x = allPrices.map(p => shortMap[p] ? shortMap[p]['100x'] : 0);
+            
+            let currentPriceIndex = allPrices.findIndex(p => p >= coinData.currentPrice);
+            if (currentPriceIndex === -1) currentPriceIndex = allPrices.length - 1;
+            
+            if (liqChart) liqChart.destroy();
+            const ctx = document.getElementById('liq-chart').getContext('2d');
+            liqChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Long 10x', data: long10x, backgroundColor: '#3b82f680', stack: 'long', barPercentage: 0.9, categoryPercentage: 0.9 },
+                        { label: 'Long 25x', data: long25x, backgroundColor: '#eab30880', stack: 'long', barPercentage: 0.9, categoryPercentage: 0.9 },
+                        { label: 'Long 50x', data: long50x, backgroundColor: '#f9731680', stack: 'long', barPercentage: 0.9, categoryPercentage: 0.9 },
+                        { label: 'Long 100x', data: long100x, backgroundColor: '#ef444480', stack: 'long', barPercentage: 0.9, categoryPercentage: 0.9 },
+                        { label: 'Short 10x', data: short10x, backgroundColor: '#3b82f680', stack: 'short', barPercentage: 0.9, categoryPercentage: 0.9 },
+                        { label: 'Short 25x', data: short25x, backgroundColor: '#eab30880', stack: 'short', barPercentage: 0.9, categoryPercentage: 0.9 },
+                        { label: 'Short 50x', data: short50x, backgroundColor: '#f9731680', stack: 'short', barPercentage: 0.9, categoryPercentage: 0.9 },
+                        { label: 'Short 100x', data: short100x, backgroundColor: '#ef444480', stack: 'short', barPercentage: 0.9, categoryPercentage: 0.9 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => '가격: ' + items[0].label, label: ctx => { const v = Math.abs(ctx.raw); return v === 0 ? null : ctx.dataset.label + ': ' + fmt.usd(v); } }, filter: item => item.raw !== 0 } },
+                    scales: { x: { stacked: true, grid: { color: '#1a1a1a' }, ticks: { color: '#71717a', maxRotation: 45, minRotation: 45, autoSkip: true, maxTicksLimit: 15 } }, y: { stacked: true, grid: { color: '#1a1a1a' }, ticks: { color: '#71717a', callback: v => fmt.usd(Math.abs(v)) } } }
+                },
+                plugins: [{ id: 'currentPriceLine', afterDraw: function(chart) { const ctx = chart.ctx; const xAxis = chart.scales.x; const yAxis = chart.scales.y; const x = xAxis.getPixelForValue(currentPriceIndex); ctx.save(); ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2; ctx.moveTo(x, yAxis.top); ctx.lineTo(x, yAxis.bottom); ctx.stroke(); ctx.restore(); } }]
+            });
+        }
+
+        function populateLiqCoins() {
+            if (!liqData) return;
+            const sel = document.getElementById('liq-coin');
+            sel.innerHTML = '';
+            let first = null;
+            liqData.coins.forEach(coin => {
+                const d = liqData.data[coin];
+                if (d && (d.longLiquidations?.length > 0 || d.shortLiquidations?.length > 0)) {
+                    const opt = document.createElement('option');
+                    opt.value = coin; opt.textContent = coin + '/USDT';
+                    if (!first) { opt.selected = true; first = coin; }
+                    sel.appendChild(opt);
+                }
+            });
+            if (!first) sel.innerHTML = '<option value="">데이터 없음</option>';
+            else selectedLiqCoin = first;
+            updateLiqChart();
         }
 
         function renderPnL() {
-            const traders = traderPeriod === 'daily' ? data?.whaleTracker?.daily : data?.whaleTracker?.weekly;
+            const traders = traderPeriod === 'daily' ? whaleData?.whaleTracker?.daily : whaleData?.whaleTracker?.weekly;
             if (!traders) return;
             document.getElementById('pnl-tbody').innerHTML = traders.map((t,i) => {
                 const name = t.displayName || fmt.addr(t.address), hasPos = t.positions?.length > 0;
-                return `<tr><td><span class="rank ${i<3?'top3':''}">#${i+1}</span></td><td class="address"><a href="https://app.hyperliquid.xyz/explorer/address/${t.address}" target="_blank">${name}</a></td><td>${fmt.usd(t.accountValue)}</td><td class="${t.pnl>=0?'positive':'negative'}">${fmt.usd(t.pnl)}</td><td class="${t.roi>=0?'positive':'negative'}">${fmt.pctDec(t.roi)}</td><td>${fmt.usd(t.volume)}</td><td>${hasPos?`<button class="expand-btn" onclick="togglePos(${i})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`:''}</td></tr>${hasPos?`<tr class="positions-row" id="pos-${i}"><td colspan="7"><div class="positions-content"><div class="positions-grid">${t.positions.map(p => `<div class="position-card"><div class="position-header"><span class="position-coin">${p.coin}</span><span class="direction ${p.direction.toLowerCase()}">${p.direction==='Long'?'롱':'숏'}</span></div><div class="position-details"><div class="position-detail"><span class="position-detail-label">가치</span><span class="position-detail-value">${fmt.usd(p.positionValue)}</span></div><div class="position-detail"><span class="position-detail-label">레버리지</span><span class="position-detail-value">${p.leverage}x</span></div><div class="position-detail"><span class="position-detail-label">진입가</span><span class="position-detail-value">${fmt.px(p.entryPx)}</span></div><div class="position-detail"><span class="position-detail-label">미실현</span><span class="position-detail-value ${p.unrealizedPnl>=0?'positive':'negative'}">${fmt.usd(p.unrealizedPnl)}</span></div></div></div>`).join('')}</div></div></td></tr>`:''}`;
+                return `<tr><td><span class="rank ${i<3?'top3':''}">#${i+1}</span></td><td class="address"><a href="https://app.hyperliquid.xyz/explorer/address/${t.address}" target="_blank">${name}</a></td><td>${fmt.usd(t.accountValue)}</td><td class="${t.pnl>=0?'positive':'negative'}">${fmt.usd(t.pnl)}</td><td class="${t.roi>=0?'positive':'negative'}">${fmt.pctDec(t.roi)}</td><td>${fmt.usd(t.volume)}</td><td>${hasPos?`<button class="expand-btn" onclick="togglePos(${i})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`:''}</td></tr>${hasPos?`<tr class="positions-row" id="pos-${i}"><td colspan="7"><div class="positions-content"><div class="positions-grid">${t.positions.map((p,pi) => `<div class="position-card" onclick="openPositionModal(${i}, ${pi})"><div class="position-header"><span class="position-coin">${p.coin}</span><span class="direction ${p.direction.toLowerCase()}">${p.direction==='Long'?'롱':'숏'}</span></div><div class="position-details"><div class="position-detail"><span class="position-detail-label">가치</span><span class="position-detail-value">${fmt.usd(p.positionValue)}</span></div><div class="position-detail"><span class="position-detail-label">레버리지</span><span class="position-detail-value">${p.leverage}x</span></div><div class="position-detail"><span class="position-detail-label">진입가</span><span class="position-detail-value">${fmt.px(p.entryPx, p.coin)}</span></div><div class="position-detail"><span class="position-detail-label">미실현</span><span class="position-detail-value ${p.unrealizedPnl>=0?'positive':'negative'}">${fmt.usd(p.unrealizedPnl)}</span></div></div></div>`).join('')}</div></div></td></tr>`:''}`;
             }).join('');
         }
 
         function renderBiggest() {
-            const pos = data?.whaleTracker?.biggestPositions || [];
-            document.getElementById('biggest-tbody').innerHTML = pos.map((p,i) => `<tr><td><span class="rank ${i<3?'top3':''}">#${i+1}</span></td><td class="coin-name">${p.coin}</td><td><span class="direction ${p.direction.toLowerCase()}">${p.direction==='Long'?'롱':'숏'}</span></td><td>${fmt.usd(p.positionValue)}</td><td>${fmt.num(p.size)}</td><td>${fmt.px(p.entryPx)}</td><td>${p.leverage}x</td><td class="${p.unrealizedPnl>=0?'positive':'negative'}">${fmt.usd(p.unrealizedPnl)}</td><td class="address"><a href="https://app.hyperliquid.xyz/explorer/address/${p.traderAddress}" target="_blank">${p.traderName||fmt.addr(p.traderAddress)}</a></td></tr>`).join('');
+            const pos = whaleData?.whaleTracker?.biggestPositions || [];
+            document.getElementById('biggest-tbody').innerHTML = pos.map((p,i) => `<tr><td><span class="rank ${i<3?'top3':''}">#${i+1}</span></td><td class="coin-name">${p.coin}</td><td><span class="direction ${p.direction.toLowerCase()}">${p.direction==='Long'?'롱':'숏'}</span></td><td>${fmt.usd(p.positionValue)}</td><td>${fmt.num(p.size)}</td><td>${fmt.px(p.entryPx, p.coin)}</td><td>${p.leverage}x</td><td class="${p.unrealizedPnl>=0?'positive':'negative'}">${fmt.usd(p.unrealizedPnl)}</td><td class="address"><a href="https://app.hyperliquid.xyz/explorer/address/${p.traderAddress}" target="_blank">${p.traderName||fmt.addr(p.traderAddress)}</a></td></tr>`).join('');
         }
 
         function getPosAgg() {
-            if (!data?.positionAggregation) return [];
-            if (posData === 'pnl') return posPeriod === 'daily' ? data.positionAggregation.byPnlDaily : data.positionAggregation.byPnlWeekly;
-            return data.positionAggregation.bySize;
+            if (!whaleData?.positionAggregation) return [];
+            if (posData === 'pnl') return posPeriod === 'daily' ? whaleData.positionAggregation.byPnlDaily : whaleData.positionAggregation.byPnlWeekly;
+            return whaleData.positionAggregation.bySize;
         }
 
         function renderPosChart() {
@@ -366,70 +587,192 @@
             document.querySelectorAll('.bar-row').forEach(r => { r.onmouseenter = showTip; r.onmousemove = moveTip; r.onmouseleave = hideTip; });
         }
 
-        function getLiqMap() {
-            if (!data?.liquidationMap) return {};
-            if (liqData === 'pnl') return liqPeriod === 'daily' ? data.liquidationMap.byPnlDaily : data.liquidationMap.byPnlWeekly;
-            return data.liquidationMap.bySize;
-        }
-
-        function updateLiqCoins() {
-            const m = getLiqMap(), coins = Object.keys(m).sort();
-            document.getElementById('liq-coin').innerHTML = coins.map(c => `<option value="${c}" ${c===liqCoin?'selected':''}>${c}</option>`).join('');
-            if (coins.length && !coins.includes(liqCoin)) { liqCoin = coins[0]; document.getElementById('liq-coin').value = liqCoin; }
-        }
-
-        function renderLiqMap() {
-            const m = getLiqMap()[liqCoin];
-            if (!m?.buckets?.length) { document.getElementById('liq-chart').innerHTML = '<div class="no-data">선택한 코인의 청산 데이터가 없습니다</div>'; document.getElementById('liq-long').textContent = '$0'; document.getElementById('liq-short').textContent = '$0'; return; }
-            document.getElementById('liq-long').textContent = fmt.usd(m.totalLongLiq);
-            document.getElementById('liq-short').textContent = fmt.usd(m.totalShortLiq);
-            const max = Math.max(...m.buckets.map(b => Math.max(b.long.total, b.short.total)));
-            let priceIdx = 0;
-            m.buckets.forEach((b,i) => { if (m.currentPrice >= b.price && m.currentPrice < b.priceEnd) priceIdx = i; });
-            const pricePct = ((priceIdx + 0.5) / m.buckets.length) * 100;
-            document.getElementById('liq-chart').innerHTML = m.buckets.map((b,i) => {
-                const h = max > 0 ? (Math.max(b.long.total, b.short.total) / max) * 100 : 0;
-                const l10 = b.long['10x']||0, l25 = b.long['25x']||0, l50 = b.long['50x']||0, l100 = b.long['100x']||0;
-                const s10 = b.short['10x']||0, s25 = b.short['25x']||0, s50 = b.short['50x']||0, s100 = b.short['100x']||0;
-                const lt = b.long.total||1, st = b.short.total||1;
-                return `<div class="liq-bar-group" data-p="${b.price}" data-pe="${b.priceEnd}" data-l="${b.long.total}" data-s="${b.short.total}" data-l10="${l10}" data-l25="${l25}" data-l50="${l50}" data-l100="${l100}" data-s10="${s10}" data-s25="${s25}" data-s50="${s50}" data-s100="${s100}"><div class="liq-bar" style="height:${h}%"><div class="liq-bar-segment liq-bar-10x" style="height:${(l10+s10)/((lt+st)||1)*100}%"></div><div class="liq-bar-segment liq-bar-25x" style="height:${(l25+s25)/((lt+st)||1)*100}%"></div><div class="liq-bar-segment liq-bar-50x" style="height:${(l50+s50)/((lt+st)||1)*100}%"></div><div class="liq-bar-segment liq-bar-100x" style="height:${(l100+s100)/((lt+st)||1)*100}%"></div></div><div class="liq-bar-label">${fmt.px(b.price)}</div></div>`;
-            }).join('') + `<div class="liq-current-price" style="left:${pricePct}%" data-price="현재가: ${fmt.px(m.currentPrice)}"></div>`;
-            document.querySelectorAll('.liq-bar-group').forEach(b => { b.onmouseenter = showLiqTip; b.onmousemove = moveTip; b.onmouseleave = hideTip; });
-        }
-
-        function showTip(e) {
-            const t = document.getElementById('tooltip'), r = e.currentTarget.dataset;
-            t.innerHTML = `<div class="tooltip-title">${r.coin}</div><div class="tooltip-row"><span class="tooltip-label">롱 금액</span><span class="tooltip-value positive">${fmt.usd(r.long)}</span></div><div class="tooltip-row"><span class="tooltip-label">숏 금액</span><span class="tooltip-value negative">${fmt.usd(r.short)}</span></div><div class="tooltip-row"><span class="tooltip-label">롱 수량</span><span class="tooltip-value">${fmt.num(r.ls)}</span></div><div class="tooltip-row"><span class="tooltip-label">숏 수량</span><span class="tooltip-value">${fmt.num(r.ss)}</span></div>`;
-            t.classList.add('visible');
-        }
-        function showLiqTip(e) {
-            const t = document.getElementById('tooltip'), r = e.currentTarget.dataset;
-            t.innerHTML = `<div class="tooltip-title">$${fmt.px(r.p)} - $${fmt.px(r.pe)}</div><div class="tooltip-row"><span class="tooltip-label">롱 청산</span><span class="tooltip-value positive">${fmt.usd(r.l)}</span></div><div class="tooltip-row"><span class="tooltip-label">숏 청산</span><span class="tooltip-value negative">${fmt.usd(r.s)}</span></div><hr style="border:none;border-top:1px solid #3a3a4a;margin:4px 0"><div class="tooltip-row"><span class="tooltip-label">10x</span><span class="tooltip-value">${fmt.usd(+r.l10+(+r.s10))}</span></div><div class="tooltip-row"><span class="tooltip-label">25x</span><span class="tooltip-value">${fmt.usd(+r.l25+(+r.s25))}</span></div><div class="tooltip-row"><span class="tooltip-label">50x</span><span class="tooltip-value">${fmt.usd(+r.l50+(+r.s50))}</span></div><div class="tooltip-row"><span class="tooltip-label">100x</span><span class="tooltip-value">${fmt.usd(+r.l100+(+r.s100))}</span></div>`;
-            t.classList.add('visible');
-        }
+        function togglePos(i) { const r = document.getElementById(`pos-${i}`); if(r) r.classList.toggle('visible'); document.querySelectorAll('.expand-btn')[i]?.classList.toggle('expanded'); }
+        function showTip(e) { const t = document.getElementById('tooltip'), r = e.currentTarget.dataset; t.innerHTML = `<div class="tooltip-title">${r.coin}</div><div class="tooltip-row"><span class="tooltip-label">롱 금액</span><span class="tooltip-value positive">${fmt.usd(r.long)}</span></div><div class="tooltip-row"><span class="tooltip-label">숏 금액</span><span class="tooltip-value negative">${fmt.usd(r.short)}</span></div><div class="tooltip-row"><span class="tooltip-label">롱 수량</span><span class="tooltip-value">${fmt.num(r.ls)}</span></div><div class="tooltip-row"><span class="tooltip-label">숏 수량</span><span class="tooltip-value">${fmt.num(r.ss)}</span></div>`; t.classList.add('visible'); }
         function moveTip(e) { const t = document.getElementById('tooltip'); t.style.left = (e.clientX + 12) + 'px'; t.style.top = (e.clientY + 12) + 'px'; }
         function hideTip() { document.getElementById('tooltip').classList.remove('visible'); }
-        function togglePos(i) { const r = document.getElementById(`pos-${i}`); if(r) r.classList.toggle('visible'); document.querySelectorAll('.expand-btn')[i]?.classList.toggle('expanded'); }
 
-        // Event listeners
+        // Position Chart Modal
+        function openPositionModal(traderIdx, posIdx) {
+            const traders = traderPeriod === 'daily' ? whaleData?.whaleTracker?.daily : whaleData?.whaleTracker?.weekly;
+            if (!traders || !traders[traderIdx] || !traders[traderIdx].positions[posIdx]) return;
+            
+            currentPosition = traders[traderIdx].positions[posIdx];
+            const p = currentPosition;
+            
+            document.getElementById('modal-coin').textContent = p.coin;
+            const dirEl = document.getElementById('modal-direction');
+            dirEl.textContent = p.direction === 'Long' ? 'LONG' : 'SHORT';
+            dirEl.className = 'modal-direction ' + p.direction.toLowerCase();
+            
+            document.getElementById('modal-size').textContent = fmt.usd(p.positionValue);
+            document.getElementById('modal-entry').textContent = fmt.px(p.entryPx, p.coin);
+            document.getElementById('modal-current').textContent = live?.[p.coin] ? fmt.px(live[p.coin].markPx, p.coin) : '-';
+            document.getElementById('modal-leverage').textContent = p.leverage + 'x';
+            const pnlEl = document.getElementById('modal-pnl');
+            pnlEl.textContent = fmt.usd(p.unrealizedPnl);
+            pnlEl.className = 'modal-stat-value ' + (p.unrealizedPnl >= 0 ? 'positive' : 'negative');
+            
+            document.getElementById('position-modal').classList.add('visible');
+            loadPositionChart();
+        }
+
+        function closePositionModal() {
+            document.getElementById('position-modal').classList.remove('visible');
+            if (positionChart) { positionChart.destroy(); positionChart = null; }
+        }
+
+        async function loadPositionChart() {
+            if (!currentPosition) return;
+            const loading = document.getElementById('modal-loading');
+            loading.style.display = 'block';
+            
+            try {
+                // Fetch candle data from Hyperliquid
+                const interval = currentTimeframe === '1D' ? 86400000 : currentTimeframe === '4h' ? 14400000 : currentTimeframe === '1h' ? 3600000 : currentTimeframe === '15m' ? 900000 : 300000;
+                const endTime = Date.now();
+                const startTime = endTime - (interval * 100); // Last 100 candles
+                
+                const r = await fetch('https://api.hyperliquid.xyz/info', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        type: 'candleSnapshot',
+                        req: { coin: currentPosition.coin, interval: currentTimeframe, startTime, endTime }
+                    })
+                });
+                const candles = await r.json();
+                
+                if (candles && candles.length > 0) {
+                    const labels = candles.map(c => {
+                        const d = new Date(c.t);
+                        return currentTimeframe === '1D' ? `${d.getMonth()+1}/${d.getDate()}` : `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+                    });
+                    const prices = candles.map(c => parseFloat(c.c)); // Close prices
+                    
+                    const entryPrice = parseFloat(currentPosition.entryPx);
+                    const currentPrice = live?.[currentPosition.coin]?.markPx || prices[prices.length - 1];
+                    
+                    if (positionChart) positionChart.destroy();
+                    const ctx = document.getElementById('position-chart').getContext('2d');
+                    
+                    positionChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: prices,
+                                borderColor: '#22d3ee',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.1,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => fmt.px(ctx.raw, currentPosition.coin)
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { color: '#1a1a1a' }, ticks: { color: '#71717a', maxTicksLimit: 10 } },
+                                y: { grid: { color: '#1a1a1a' }, ticks: { color: '#71717a', callback: v => fmt.px(v, currentPosition.coin) } }
+                            }
+                        },
+                        plugins: [{
+                            id: 'priceLines',
+                            afterDraw: function(chart) {
+                                const ctx = chart.ctx;
+                                const yAxis = chart.scales.y;
+                                const xAxis = chart.scales.x;
+                                
+                                // Entry price line (red dashed)
+                                const entryY = yAxis.getPixelForValue(entryPrice);
+                                if (entryY >= yAxis.top && entryY <= yAxis.bottom) {
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.setLineDash([5, 5]);
+                                    ctx.strokeStyle = '#ef4444';
+                                    ctx.lineWidth = 2;
+                                    ctx.moveTo(xAxis.left, entryY);
+                                    ctx.lineTo(xAxis.right, entryY);
+                                    ctx.stroke();
+                                    
+                                    // Entry label
+                                    ctx.fillStyle = '#ef4444';
+                                    ctx.fillRect(xAxis.right - 80, entryY - 10, 80, 20);
+                                    ctx.fillStyle = '#fff';
+                                    ctx.font = '10px JetBrains Mono';
+                                    ctx.textAlign = 'center';
+                                    ctx.fillText('Entry: ' + fmt.px(entryPrice, currentPosition.coin).replace('$',''), xAxis.right - 40, entryY + 4);
+                                    ctx.restore();
+                                }
+                                
+                                // Current price line (cyan solid)
+                                const currentY = yAxis.getPixelForValue(currentPrice);
+                                if (currentY >= yAxis.top && currentY <= yAxis.bottom) {
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.strokeStyle = '#22d3ee';
+                                    ctx.lineWidth = 2;
+                                    ctx.moveTo(xAxis.left, currentY);
+                                    ctx.lineTo(xAxis.right, currentY);
+                                    ctx.stroke();
+                                    
+                                    // Current label
+                                    ctx.fillStyle = '#22d3ee';
+                                    ctx.fillRect(xAxis.right - 80, currentY - 10, 80, 20);
+                                    ctx.fillStyle = '#000';
+                                    ctx.font = '10px JetBrains Mono';
+                                    ctx.textAlign = 'center';
+                                    ctx.fillText('Current: ' + fmt.px(currentPrice, currentPosition.coin).replace('$',''), xAxis.right - 40, currentY + 4);
+                                    ctx.restore();
+                                }
+                            }
+                        }]
+                    });
+                }
+            } catch(e) {
+                console.error('Chart error:', e);
+            }
+            
+            loading.style.display = 'none';
+        }
+
+        // Timeframe buttons
+        document.querySelectorAll('.tf-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTimeframe = btn.dataset.tf;
+                loadPositionChart();
+            };
+        });
+
+        // Close modal on overlay click
+        document.getElementById('position-modal').onclick = e => {
+            if (e.target.id === 'position-modal') closePositionModal();
+        };
+
+        // Navigation
         document.querySelectorAll('.nav-item').forEach(n => n.onclick = () => { document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); document.querySelectorAll('.section').forEach(x => x.classList.remove('active')); n.classList.add('active'); document.getElementById(n.dataset.section).classList.add('active'); });
         document.querySelectorAll('.sub-tab').forEach(t => t.onclick = () => { document.querySelectorAll('.sub-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); document.getElementById('pnl-section').style.display = t.dataset.tab === 'pnl' ? 'block' : 'none'; document.getElementById('biggest-section').style.display = t.dataset.tab === 'biggest' ? 'block' : 'none'; });
         document.querySelectorAll('#trader-tabs .tab').forEach(t => t.onclick = () => { document.querySelectorAll('#trader-tabs .tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); traderPeriod = t.dataset.v; renderPnL(); });
         document.querySelectorAll('#pos-data-tabs .tab').forEach(t => t.onclick = () => { document.querySelectorAll('#pos-data-tabs .tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); posData = t.dataset.v; renderPosChart(); });
         document.querySelectorAll('#pos-period-tabs .tab').forEach(t => t.onclick = () => { document.querySelectorAll('#pos-period-tabs .tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); posPeriod = t.dataset.v; renderPosChart(); });
         document.querySelectorAll('#pos-unit-tabs .tab').forEach(t => t.onclick = () => { document.querySelectorAll('#pos-unit-tabs .tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); posUnit = t.dataset.v; renderPosChart(); });
-        document.querySelectorAll('#liq-data-tabs .tab').forEach(t => t.onclick = () => { document.querySelectorAll('#liq-data-tabs .tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); liqData = t.dataset.v; updateLiqCoins(); renderLiqMap(); });
-        document.querySelectorAll('#liq-period-tabs .tab').forEach(t => t.onclick = () => { document.querySelectorAll('#liq-period-tabs .tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); liqPeriod = t.dataset.v; updateLiqCoins(); renderLiqMap(); });
-        document.getElementById('liq-coin').onchange = e => { liqCoin = e.target.value; renderLiqMap(); };
+        document.getElementById('liq-coin').onchange = e => { selectedLiqCoin = e.target.value; updateLiqChart(); };
 
         async function init() {
-            try {
-                const r = await fetch('data.json'); data = await r.json();
-                document.getElementById('stat-traders').textContent = data.dashboard?.totalTraders?.toLocaleString() || '-';
-                renderLiqRisks(); renderPnL(); renderBiggest(); renderPosChart(); updateLiqCoins(); renderLiqMap();
-                if (data.lastUpdated) { const d = new Date(data.lastUpdated); document.getElementById('last-updated').textContent = `마지막 포지션 업데이트: ${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} UTC`; }
-                fetchLive();
-            } catch(e) { console.error(e); document.getElementById('status').textContent = '⚠️ 오프라인'; }
+            try { const r = await fetch('whale_data.json'); whaleData = await r.json(); document.getElementById('stat-traders').textContent = whaleData.dashboard?.totalTraders?.toLocaleString() || '-'; renderPnL(); renderBiggest(); renderPosChart(); if (whaleData.lastUpdated) { const d = new Date(whaleData.lastUpdated); document.getElementById('last-updated').textContent = `마지막 포지션 업데이트: ${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} UTC`; } } catch(e) { console.log('whale_data.json not found'); }
+            try { const r2 = await fetch('data.json'); liqData = await r2.json(); populateLiqCoins(); if (liqData.lastUpdated) { const d = new Date(liqData.lastUpdated); document.getElementById('liq-last-updated').textContent = `마지막 업데이트: ${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} (${liqData.tradersCount || 0}명 트레이더)`; } } catch(e) { console.log('data.json not found'); }
+            fetchLive();
         }
 
         setInterval(fetchLive, 30000);
